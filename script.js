@@ -87,7 +87,7 @@ function toggleTask(ownerName, idx) {
     // 如果完成字數<目標字數，且使用者想要「勾選為完成」
     if (!task.done) {
         if (task.wordCount < task.targetWords) {
-            alert("🛑 休想蒙混過關！");
+            alert("休想蒙混過關！");
             return; 
         }
     }
