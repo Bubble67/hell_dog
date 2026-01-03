@@ -1,243 +1,195 @@
-// --- 1. 配置與初始化 ---
+// --- 1. 配置與初始化 (只宣告一次) ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec";
 let myName = localStorage.getItem('hellCodename') || "無名地獄狗";
+let roleplayLogs = [];
 let partners = [];
+let lastDataString = "";
 
-// --- 1. 從伺服器抓取全體進度 ---
+// 偵測目前在哪一頁
+const playInput = document.getElementById('play-input'); //角噗
+const partnerGrid = document.getElementById('partner-grid'); //任務追蹤
+const sendBtn = document.getElementById('send-btn');
+const packBtn = document.getElementById('pack-btn');
+const inputContainer = document.getElementById('input-container');
+
+function updateNameDisplay() {
+    const dogEl = document.getElementById('current-dog');
+    if (dogEl) dogEl.textContent = "當前靈魂：" + myName;
+    
+    // 如果在任務頁面，同步更新輸入框名稱
+    const authorInput = document.getElementById('author-name');
+    if (authorInput) authorInput.value = myName;
+}
+
+// --- 2. 任務系統 ---
+
 async function fetchAllProgress() {
+    if (!partnerGrid) return;
     try {
         const response = await fetch(`${GAS_URL}?mode=tasks`);
         const data = await response.json();
-        // 將 GAS 資料轉換為前端格式
         partners = data.map((item, index) => ({
             id: index,
             name: item.name,
             tasks: item.tasks
         }));
         renderPartners();
-    } catch (e) { console.error("抓取進度失敗", e); }
+    } catch (e) { console.error("試圖握住沙粒，卻從指縫流走了……", e); }
 }
 
-// --- 2. 推送我的進度到伺服器 ---
 async function syncMyProgress() {
     const myData = partners.find(p => p.name === myName);
     if (!myData) return;
-
     try {
         await fetch(GAS_URL, {
             method: 'POST',
-            body: JSON.stringify({
-                type: 'sync_task',
-                author: myName,
-                tasks: myData.tasks
-            })
+            body: JSON.stringify({ type: 'sync_task', author: myName, tasks: myData.tasks })
         });
-        console.log("進度已同步至沙堡總部");
-    } catch (e) { console.error("同步失敗", e); }
+        console.log("靈魂已，禁錮於此。");
+    } catch (e) { console.error("地獄狗，你需要再次嘗試!", e); }
 }
 
-// 修改原本的任務操作函式，加入同步邏輯
-function toggleTask(partnerId, taskIdx) {
-    const p = partners.find(p => p.id === partnerId);
-    if (p.name !== myName) return alert("你不能幫別的狗狗勾選任務！");
-    
-    p.tasks[taskIdx].done = !p.tasks[taskIdx].done;
+function renderPartners() {
+    if (!partnerGrid) return;
+    const addButtonHTML = `<button class="add-partner-btn" onclick="addNewPartner()"><span style="font-size: 2em;">+</span><span>加入進度牆</span></button>`;
+
+    partnerGrid.innerHTML = partners.map(p => {
+        let currentWords = 0, goalWords = 0;
+        p.tasks.forEach(t => { currentWords += (t.wordCount || 0); goalWords += (t.targetWords || 500); });
+        const progress = goalWords === 0 ? 0 : Math.min(100, Math.round((currentWords / goalWords) * 100));
+        const isMe = p.name === myName;
+
+        return `
+            <div class="partner-card" style="${isMe ? 'border-color: var(--accent-color)' : ''}">
+                <div class="partner-header"><span class="partner-name">${p.name}</span><b>${progress}%</b></div>
+                <div class="ind-progress-container"><div class="ind-progress-bar" style="width: ${progress}%"></div></div>
+                <ul class="task-list">
+                    ${p.tasks.map((t, idx) => `
+                        <li class="task-item">
+                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask('${p.name}', ${idx})"></div>
+                            <span class="task-text" onclick="updateTaskWordCount('${p.name}', ${idx})">${t.text} (${t.wordCount}/${t.targetWords})</span>
+                        </li>
+                    `).join('')}
+                </ul>
+                ${isMe ? `<input type="text" class="input-mini" placeholder="+ 新增任務" onkeypress="addTask(event)">` : ''}
+            </div>
+        `;
+    }).join('') + addButtonHTML;
+}
+
+// 任務操作
+function toggleTask(owner, idx) {
+    if (owner !== myName) return alert("地獄狗!壞!不可以亂碰！");
+    const p = partners.find(p => p.name === myName);
+    p.tasks[idx].done = !p.tasks[idx].done;
     renderAndSync();
 }
 
-function renderAndSync() {
-    renderPartners();
-    syncMyProgress();
+function updateTaskWordCount(owner, idx) {
+    if (owner !== myName) return alert("這不是你的進度！");
+    const p = partners.find(p => p.name === myName);
+    const count = prompt("更新搬運了多少沙子：", p.tasks[idx].wordCount);
+    if (count !== null) {
+        p.tasks[idx].wordCount = parseInt(count) || 0;
+        p.tasks[idx].done = p.tasks[idx].wordCount >= p.tasks[idx].targetWords;
+        renderAndSync();
+    }
 }
 
-// 點擊「如果你也掉進地獄」改為「加入進度牆」
+function addTask(e) {
+    if (e.key === 'Enter' && e.target.value.trim() !== "") {
+        const p = partners.find(p => p.name === myName);
+        if (!p) return alert("新來的爆上名啊！");
+        const target = prompt("設定目標字數：", 500);
+        p.tasks.push({ text: e.target.value, done: false, wordCount: 0, targetWords: parseInt(target) || 500 });
+        e.target.value = "";
+        renderAndSync();
+    }
+}
+
 function addNewPartner() {
-    if (partners.some(p => p.name === myName)) return alert("你的靈魂被禁錮於此！");
-    partners.push({ id: Date.now(), name: myName, tasks: [] });
+    if (partners.some(p => p.name === myName)) return alert("你已經在牆上了！");
+    partners.push({ name: myName, tasks: [] });
     renderAndSync();
 }
 
-// 啟動：每 10 秒自動刷新全體進度
-setInterval(fetchAllProgress, 10000);
-fetchAllProgress();
+function renderAndSync() { renderPartners(); syncMyProgress(); }
 
-// 控制舞台開關介面
+// --- 3. 角噗舞台 ---
+
 function setStageStatus(isOpen) {
     if (!playInput) return;
     playInput.disabled = !isOpen;
-    sendBtn.disabled = !isOpen;
-    
-    if (isOpen) {
-        inputContainer.classList.remove('is-locked');
-        playInput.placeholder = "🎭 舞台演出中，盡情交流吧！";
-        packBtn.classList.remove('ready');
-        packBtn.disabled = true;
-    } else {
-        inputContainer.classList.add('is-locked');
-        playInput.placeholder = "🛑 劇場已謝幕。請打包紀錄或點擊「汪！」開場。";
-        packBtn.classList.add('ready');
-        packBtn.disabled = false;
-    }
+    if (sendBtn) sendBtn.disabled = !isOpen;
+    if (inputContainer) isOpen ? inputContainer.classList.remove('is-locked') : inputContainer.classList.add('is-locked');
 }
 
-// --- 2. API 互動 ---
-
 async function renderLogs(forceUpdate = false) {
+    const display = document.getElementById('log-display');
+    if (!display) return;
     try {
         const response = await fetch(GAS_URL);
         const data = await response.json();
-        const currentDataString = JSON.stringify(data);
-        
-        if (!forceUpdate && currentDataString === lastDataString) return;
-        lastDataString = currentDataString;
+        if (!forceUpdate && JSON.stringify(data) === lastDataString) return;
+        lastDataString = JSON.stringify(data);
         roleplayLogs = data;
 
-        // 邏輯判斷：最後一則訊息決定狀態
         if (roleplayLogs.length > 0) {
-            const lastMsg = roleplayLogs[roleplayLogs.length - 1].text;
-            setStageStatus(lastMsg !== "汪汪。");
-        } else {
-            setStageStatus(false); 
+            setStageStatus(roleplayLogs[roleplayLogs.length - 1].text !== "汪汪。");
         }
-
-        const display = document.getElementById('log-display');
-        if (!display) return;
-        display.innerHTML = roleplayLogs.map((log) => {
-            if (log.text === "汪！" || log.text === "汪汪。") {
-                return `<div class="brick-signal">── ${log.author}：${log.text} ──</div>`;
-            }
-            return `
-                <div class="speech-brick ${log.author === myName ? 'is-me' : ''}">
-                    <div class="author-tag">${log.author}</div>
-                    <div class="brick-text">${log.text}</div>
-                </div>
-            `;
+        display.innerHTML = roleplayLogs.map(log => {
+            if (log.text === "汪！" || log.text === "汪汪。") return `<div class="brick-signal">── ${log.author}：${log.text} ──</div>`;
+            return `<div class="speech-brick ${log.author === myName ? 'is-me' : ''}"><div class="author-tag">${log.author}</div><div class="brick-text">${log.text}</div></div>`;
         }).join('');
         display.scrollTop = display.scrollHeight;
-    } catch (e) { console.error("同步失敗", e); }
+    } catch (e) { console.error("對話同步失敗", e); }
 }
 
 async function handleSend() {
+    if (!playInput || playInput.disabled) return;
     const text = playInput.value.trim();
-    if (!text || playInput.disabled) return;
-    
+    if (!text) return;
     playInput.disabled = true;
-    const originalText = text;
-    playInput.value = "刻碑中……";
-
     try {
-        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ author: myName, text: originalText }) });
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ author: myName, text: text }) });
         playInput.value = "";
         renderLogs(true);
-    } catch (e) { 
-        alert("發送失敗"); 
-        playInput.disabled = false; 
-        playInput.value = originalText;
-    }
+    } catch (e) { alert("發送失敗"); playInput.disabled = false; }
 }
 
 async function insertSignal(signal) {
-    const originalPlaceholder = playInput.placeholder;
+    if (!playInput) return;
     try {
-    
-        playInput.placeholder = `訊號狗努力中……`;
-        
-        const response = await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ author: myName, text: signal })
-        });
-
-        if (response.ok) {
-            playInput.placeholder = originalPlaceholder;
-            renderLogs(true); 
-        }
-    } catch (e) {
-        console.error("信號發送失敗:", e);
-        alert("地獄通訊中斷。");
-        playInput.placeholder = originalPlaceholder;
-    }
+        await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ author: myName, text: signal }) });
+        renderLogs(true);
+    } catch (e) { alert("通訊中斷"); }
 }
 
-// --- 3. 手機端調整 ---
+// --- 4. 初始化啟動器 ---
 
-playInput.addEventListener('keydown', (e) => {
+updateNameDisplay();
 
-    if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
-        if (!playInput.disabled) {
-            e.preventDefault(); 
+// 根據所在頁面啟動對應循環
+if (partnerGrid) { // 任務頁
+    fetchAllProgress();
+    setInterval(fetchAllProgress, 10000);
+}
+
+if (playInput) { // 角噗頁
+    renderLogs(true);
+    setInterval(() => renderLogs(false), 5000);
+    
+    // 電腦版 Enter 送出監聽
+    playInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+            e.preventDefault();
             handleSend();
         }
-    }
-});
-
-async function castToStone() {
-    // 1. 檢查是否有紀錄
-    if (roleplayLogs.length === 0) return alert("舞台上空無一物。");
-
-    const startIdx = roleplayLogs.findLastIndex(l => l.text === "汪！");
-    const endIdx = roleplayLogs.findLastIndex(l => l.text === "汪汪。");
-
-    if (startIdx === -1 || endIdx === -1 || startIdx >= endIdx) {
-        return alert("找不到完整的『汪！』到『汪汪。』區間。");
-    }
-
-    // 2. 擷取對話
-    const logs = roleplayLogs.slice(startIdx + 1, endIdx);
-    const content = logs.map(l => `【${l.author}】: ${l.text}`).join('\n');
-    const formattedText = `【地獄狗角噗紀錄】\n${new Date().toLocaleString()}\n----------------\n${content}\n----------------`;
-
-    try {
-        // 3. 嘗試複製到剪貼簿 (注意：這在 local file 環境可能會失敗)
-        await navigator.clipboard.writeText(formattedText);
-        
-        // 4. 確認是否清空
-        if (confirm("紀錄已複製！現在要清空舞台並前往沙堡嗎？")) {
-            const docUrlEl = document.getElementById('doc-url');
-            
-            // 【優化】先開啟新分頁，避免被瀏覽器攔截
-            if (docUrlEl) {
-                window.open(docUrlEl.value, '_blank');
-            }
-
-            // 【優化】發送清空指令到 GAS
-            await fetch(GAS_URL, { 
-                method: 'POST', 
-                body: JSON.stringify({ action: 'clear' }) 
-            });
-
-            // 5. 確保資料清空後再重整
-            location.reload();
-        }
-    } catch (err) {
-        console.error("打包過程出錯:", err);
-        alert("打包失敗。原因可能是：\n1. 瀏覽器攔截了剪貼簿（請在 GitHub Pages HTTPS 下測試）\n2. 網路通訊中斷");
-    }
+    });
 }
 
-async function clearStageManually() {
-    if (!confirm("🔥 確定要徹底抹除舞台上的所有痕跡嗎？（不可復原）")) return;
-    await fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ action: 'clear' }) });
-    location.reload();
-}
-
+// 通用功能
 function changeName() {
     const n = prompt("重塑靈魂代號：", myName);
-    if (n) { myName = n; localStorage.setItem('hellCodename', n); updateNameDisplay(); renderLogs(true); }
+    if (n) { myName = n; localStorage.setItem('hellCodename', n); updateNameDisplay(); location.reload(); }
 }
-
-function insertNewLine() {
-    const s = playInput.selectionStart;
-    playInput.value = playInput.value.substring(0, s) + "\n" + playInput.value.substring(playInput.selectionEnd);
-    playInput.selectionStart = playInput.selectionEnd = s + 1;
-    playInput.focus();
-}
-
-function scrollToChatTop() {
-    const display = document.getElementById('log-display');
-    if (display) display.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-// --- 4. 啟動循環 ---
-setInterval(() => renderLogs(false), 5000);
-updateNameDisplay();
-renderLogs(true);
