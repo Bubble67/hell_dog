@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>地獄寫字狗沙堡｜角噗！</title>
+    <link rel="stylesheet" href="style.css"> <title>地獄寫字狗沙堡｜角噗！</title>
+</head>
+<body>
+
+<div class="container">
+    <div class="nav-header">
+        <a href="index.html" class="home-link">🏰 地獄入口</a>
+    </div>
+
+    <h1>🎭 角噗舞台</h1>
+    <div class="log-display" id="log-display"></div>
+
+    <div class="input-area" id="input-container">
+        <div class="identity-switcher">
+            <span id="current-dog" style="color: var(--highlight-color); font-weight: bold;"></span>
+            <button class="change-name-btn" onclick="changeName()">⚡ 切換靈魂</button>
+        </div>
+
+        <div class="tool-bar">
+            <button class="tool-btn" onclick="insertNewLine()">↵ 換行</button>
+            <button class="tool-btn" onclick="insertSignal('汪！')">🐾 汪！ (開場)</button>
+            <button class="tool-btn" onclick="insertSignal('汪汪。')">🦴 汪汪。 (謝幕)</button>
+        </div>
+
+        <input type="hidden" id="doc-url" value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.xpmp99ar9j6c">
+        <textarea id="play-input" placeholder="請先按「汪！」開啟舞台"></textarea>
+        
+        <div class="send-row">
+            <div>
+                <button id="pack-btn" class="pack-btn" onclick="castToStone()">📦 打包存檔</button>
+                <button id="clear-btn" class="pack-btn" onclick="clearStageManually()">🗑️ 抹除舞台</button>
+            </div>
+            <button id="send-btn" class="main-send-btn" onclick="handleSend()">刻下此碑</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>

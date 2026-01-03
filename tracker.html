@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>沙堡：地獄寫字狗｜懺悔進度回報</title>
+    <style>
+        :root {
+            --bg-color: #0f0f1a;
+            --card-color: #1a1a2e;
+            --accent-color: #e94560;
+            --secondary-color: #533483;
+            --text-color: #e0e0e0;
+            --highlight-color: #ffd700;
+            --muted-color: #444;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0f0f1a 100%);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .main-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        h1 {
+            color: var(--accent-color);
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 0 15px rgba(233, 69, 96, 0.4);
+        }
+
+        .subtitle {
+            color: #888;
+            font-style: italic;
+        }
+
+        /* 字數統計工具區 */
+        .tool-section {
+            background: var(--card-color);
+            padding: 25px;
+            border-radius: 15px;
+            border: 1px solid #333;
+            margin-bottom: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .tool-title {
+            color: var(--highlight-color);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+        }
+
+        textarea {
+            width: 100%;
+            height: 120px;
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            border-radius: 8px;
+            color: white;
+            padding: 15px;
+            box-sizing: border-box;
+            font-size: 1em;
+            resize: vertical;
+            outline: none;
+        }
+
+        textarea:focus {
+            border-color: var(--accent-color);
+        }
+
+        .counter-display {
+            margin-top: 10px;
+            text-align: right;
+            font-size: 0.9em;
+            color: #aaa;
+        }
+
+        .counter-val {
+            color: var(--accent-color);
+            font-weight: bold;
+            font-size: 1.2em;
+            margin: 0 5px;
+        }
+
+        /* 夥伴進度區佈局 */
+        .partner-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+
+        .partner-card {
+            background: var(--card-color);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid #333;
+            position: relative;
+            transition: 0.3s;
+        }
+
+        .partner-card:hover {
+            border-color: var(--secondary-color);
+        }
+
+        .partner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .partner-name {
+            font-size: 1.2em;
+            color: var(--highlight-color);
+            font-weight: bold;
+        }
+
+        /* 個人進度條 */
+        .ind-progress-container {
+            background: #111;
+            height: 6px;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .ind-progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+            width: 0%;
+            transition: width 0.4s;
+        }
+
+        /* 任務清單 */
+        .task-list { list-style: none; padding: 0; margin: 0; }
+        .task-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 8px 0;
+            border-bottom: 1px solid #2a2a3a;
+        }
+        .task-item:last-child { border-bottom: none; }
+        
+        .check-box {
+            width: 18px;
+            height: 18px;
+            border: 2px solid var(--accent-color);
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .check-box.done { background: var(--accent-color); position: relative; }
+        .check-box.done::after { content: "✓"; color: white; font-size: 12px; position: absolute; left: 2px; top: -2px; }
+
+        .task-text { flex: 1; font-size: 0.95em; }
+        .task-text.done { text-decoration: line-through; color: #666; }
+
+        /* 操作按鈕 */
+        .add-partner-btn {
+            background: transparent;
+            border: 2px dashed #444;
+            color: #666;
+            padding: 20px;
+            border-radius: 15px;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .add-partner-btn:hover {
+            border-color: var(--accent-color);
+            color: var(--accent-color);
+        }
+
+        .input-mini {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #444;
+            color: white;
+            padding: 5px 10px;
+            border-radius: 4px;
+            width: 100%;
+            box-sizing: border-box;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 600px) {
+            .partner-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="main-wrapper">
+    <header>
+        <h1>地獄寫字狗</h1>
+        <p class="subtitle">—— 找回做人的寫字魂，或者永遠在地獄裡當狗 ——</p>
+    </header>
+
+   <section class="tool-section">
+    <div class="tool-title">✍️ 地獄打字機 </div>
+    <textarea id="draft-area" placeholder="在此投入精心挑選的細沙，我將為你統計靈魂的重量..." oninput="autoSave()"></textarea>
+    
+    <div class="counter-display">
+        目前累計：<span id="char-count" class="counter-val">0</span> 字 | 
+        含標點：<span id="total-count" class="counter-val">0</span>
+    </div>
+
+    <div class="action-area" style="margin-top: 20px; flex-direction: column; gap: 12px; display: flex;">
+        <div style="display: flex; gap: 10px;">
+            <input type="text" id="author-name" class="input-mini" placeholder="報上你的地獄狗名！（如：麻糬/小黑）" style="flex: 1; margin: 0;">
+            <select id="doc-select" class="input-mini" style="flex: 1; margin: 0;">
+                <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.0">🏰 進入沙堡主城
+                <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.mr8n2wky4dq1">🐕 成為地獄狗的第一天
+                 <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.81i2lkbmqm7v">🐕 成為地獄狗的第二天
+                 <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.hv1dqm455ld">🐕 成為地獄狗的第三天
+                 <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.l8igzyfxq32a">🐕 成為地獄狗的第四天
+                 <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.icauaou28nz3">🐕 成為地獄狗的第五天
+                 <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.p9ehn7fsay5s">🐕 成為地獄狗的第六天
+                 <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.ywlv8w6dzqwl">🐕 再不懺悔就要徹底變成狗了！
+                </option>
+            </select>
+        </div>
+        
+        <button class="cta-btn" style="width: 100%;" onclick="castToStone()">
+            🔥 把散沙疊成大大沙堡：複製並前往 Google Doc
+        </button>
+    </div>
+    </section>
+
+<section class="tool-section" style="margin-top: 20px; border-style: dashed; opacity: 0.7;">
+    <div class="tool-title" style="font-size: 0.9em;">📜 勤奮狗狗表揚（最近 5 塊零件）</div>
+    <ul id="bricks-container" class="task-list" style="font-size: 0.85em;"></ul>
+</section>
+
+    <div class="partner-grid" id="partner-grid">
+        <button class="add-partner-btn" onclick="addNewPartner()">
+            <span style="font-size: 2em;">+</span>
+            <span>如果你也掉進地獄的話</span>
+        </button>
+    </div>
+</div>
+
+<script>
+// --- 1. 初始化資料 ---
+let partners = JSON.parse(localStorage.getItem('sandcastlePartners')) || [
+    { id: 1, name: "臺灣黑狗麻糬", tasks: [{ text: "確認沙堡堆疊情形", done: false, wordCount: 0, targetWords: 500 }] }
+];
+let records = JSON.parse(localStorage.getItem('hellRecords')) || [];
+
+// --- 2. 字數統計與草稿自動備份 ---
+function autoSave() {
+    const text = document.getElementById('draft-area').value;
+    localStorage.setItem('hellDraft', text); 
+    countWords(text);
+}
+
+function countWords(text) {
+    const cleanText = text.replace(/\s/g, ''); 
+    document.getElementById('char-count').textContent = cleanText.length;
+    document.getElementById('total-count').textContent = text.length;
+}
+
+// --- 3. 模具：打包文字、複製、跳轉 ---
+function castToStone() {
+    const text = document.getElementById('draft-area').value;
+    const author = document.getElementById('author-name').value || "已遺失記憶：姓名";
+    const docUrl = document.getElementById('doc-select').value;
+    const wordCount = document.getElementById('char-count').textContent;
+    const now = new Date().toLocaleString();
+
+    if (!text.trim()) {
+        alert("有沙子才能放進模具壓實啊……");
+        return;
+    }
+
+    const formattedText = `【地獄沙堡堆疊日誌】\n哪隻狗狗這麼乖：${author}\n時間：${now}\n字數統計：${wordCount} 字\n--------------------------\n${text}\n--------------------------`;
+
+    navigator.clipboard.writeText(formattedText).then(() => {
+        alert("🔥 這塊沙堡零件已經完成了！\n快給其他寫字狗看看你高超的效率吧。");
+        window.open(docUrl, '_blank');
+        saveToLocalRecord(author, wordCount);
+    });
+}
+
+// --- 4. 全體進度追蹤（夥伴與任務管理） ---
+function addNewPartner() {
+    const name = prompt("報上你的狗名！（例如：小黑/麻糬）：");
+    if (!name || name.trim() === "") return;
+    
+    partners.push({
+        id: Date.now(),
+        name: name,
+        tasks: []
+    });
+    saveAndRender();
+}
+
+function removePartner(id) {
+    if (confirm("確定要和沙堡說掰掰了嗎？")) {
+        partners = partners.filter(p => p.id !== id);
+        saveAndRender();
+    }
+}
+
+// 新增任務並設定目標字數
+function addTask(e, partnerId) {
+    if (e.key === 'Enter' && e.target.value.trim() !== "") {
+        const taskName = e.target.value;
+        let targetInput = prompt(`這塊零件「${taskName}」有多重？\n(最輕也要放500粒沙子呀！)`, 500);
+        
+        if (targetInput !== null) {
+            let target = parseInt(targetInput) || 500;
+            if (target > 900) target = 900;
+            
+            const p = partners.find(p => p.id === partnerId);
+            p.tasks.push({ 
+                text: taskName, 
+                done: false, 
+                wordCount: 0, 
+                targetWords: target 
+            });
+            e.target.value = "";
+            saveAndRender();
+        }
+    }
+}
+
+// 更新任務目前的字數
+function updateTaskWordCount(partnerId, taskIdx) {
+    const p = partners.find(p => p.id === partnerId);
+    const task = p.tasks[taskIdx];
+    const newCount = prompt(`更新「${task.text}」搬運了多少沙子 (目標 ${task.targetWords} 字)：`, task.wordCount || 0);
+    
+    if (newCount !== null) {
+        const count = parseInt(newCount) || 0;
+        task.wordCount = count;
+        // 達到自訂目標則自動完成
+        task.done = (count >= task.targetWords);
+        saveAndRender();
+    }
+}
+
+function toggleTask(partnerId, taskIdx) {
+    const p = partners.find(p => p.id === partnerId);
+    p.tasks[taskIdx].done = !p.tasks[taskIdx].done;
+    saveAndRender();
+}
+
+function deleteTask(partnerId, taskIdx) {
+    const p = partners.find(p => p.id === partnerId);
+    p.tasks.splice(taskIdx, 1);
+    saveAndRender();
+}
+
+// --- 5. 紀錄與渲染邏輯 ---
+function saveToLocalRecord(author, count) {
+    records.unshift({ author, count, time: new Date().toLocaleTimeString() });
+    localStorage.setItem('hellRecords', JSON.stringify(records.slice(0, 5)));
+    renderRecords();
+}
+
+function saveAndRender() {
+    localStorage.setItem('sandcastlePartners', JSON.stringify(partners));
+    renderPartners();
+}
+
+function renderRecords() {
+    const container = document.getElementById('bricks-container');
+    if (!container) return;
+    container.innerHTML = records.map(r => `
+        <li class="task-item">
+            <span>[${r.time}] <b>${r.author}</b> 收集 ${r.count} 粒的上好美沙</span>
+        </li>
+    `).join('');
+}
+
+function renderPartners() {
+    const grid = document.getElementById('partner-grid');
+    if (!grid) return;
+
+    const addButtonHTML = `
+        <button class="add-partner-btn" onclick="addNewPartner()">
+            <span style="font-size: 2em;">+</span>
+            <span>如果你也掉進地獄的話</span>
+        </button>
+    `;
+
+    grid.innerHTML = partners.map(p => {
+        let currentWords = 0;
+        let goalWords = 0;
+        
+        p.tasks.forEach(t => {
+            currentWords += (t.wordCount || 0);
+            goalWords += (t.targetWords || 500);
+        });
+        
+        const progress = goalWords === 0 ? 0 : Math.min(100, Math.round((currentWords / goalWords) * 100));
+
+        return `
+            <div class="partner-card">
+                <div class="partner-header">
+                    <span class="partner-name">${p.name}</span>
+                    <span style="font-size: 0.8em; color: var(--accent-color); font-weight:bold;">${progress}%</span>
+                </div>
+                <div class="ind-progress-container" style="background:#111; height:6px; border-radius:3px; margin-bottom:15px; overflow:hidden;">
+                    <div class="ind-progress-bar" style="width: ${progress}%; background: linear-gradient(90deg, var(--secondary-color), var(--accent-color)); height:100%; transition: width 0.4s;"></div>
+                </div>
+                <ul class="task-list">
+                    ${p.tasks.map((t, idx) => `
+                        <li class="task-item">
+                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask(${p.id}, ${idx})"></div>
+                            <span class="task-text ${t.done ? 'done' : ''}" onclick="updateTaskWordCount(${p.id}, ${idx})" style="cursor:pointer; flex:1;">
+                                ${t.text} <small style="opacity:0.5; font-size:0.8em;">(${t.wordCount || 0}/${t.targetWords || 500})</small>
+                            </span>
+                            <span style="cursor:pointer; opacity:0.3; padding: 0 5px;" onclick="deleteTask(${p.id}, ${idx})">×</span>
+                        </li>
+                    `).join('')}
+                </ul>
+                <input type="text" class="input-mini" placeholder="+ 新增任務後按 Enter" onkeypress="addTask(event, ${p.id})">
+                <div style="margin-top: 15px; text-align: right;">
+                    <button onclick="removePartner(${p.id})" style="background:none; border:none; color:#444; cursor:pointer; font-size:0.7em">意識消散</button>
+                </div>
+            </div>
+        `;
+    }).join('') + addButtonHTML;
+}
+
+// --- 6. 頁面載入時回復狀態 ---
+window.onload = () => {
+    const savedDraft = localStorage.getItem('hellDraft');
+    if (savedDraft) {
+        document.getElementById('draft-area').value = savedDraft;
+        countWords(savedDraft);
+    }
+    renderRecords();
+    renderPartners(); 
+};
+</script>
+
+</body>
+</html>
