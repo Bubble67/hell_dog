@@ -78,20 +78,34 @@ function renderPartners() {
 }
 
 // 任務操作
-function toggleTask(owner, idx) {
-    if (owner !== myName) return alert("地獄狗!壞!不可以亂碰！");
+function toggleTask(ownerName, idx) {
+    if (ownerName !== myName) return alert("壞!地獄狗!不可以亂碰！");
+    
     const p = partners.find(p => p.name === myName);
-    p.tasks[idx].done = !p.tasks[idx].done;
+    const task = p.tasks[idx];
+
+    // 如果完成字數<目標字數，且使用者想要「勾選為完成」
+    if (!task.done) {
+        if (task.wordCount < task.targetWords) {
+            alert("🛑 休想蒙混過關！");
+            return; 
+        }
+    }
+    // ----------------------
+
+    task.done = !task.done; 
     renderAndSync();
 }
 
-function updateTaskWordCount(owner, idx) {
-    if (owner !== myName) return alert("這不是你的進度！");
+function updateTaskWordCount(ownerName, idx) {
+    if (ownerName !== myName) return alert("別干涉不屬於你的靈魂。");
     const p = partners.find(p => p.name === myName);
-    const count = prompt("更新搬運了多少沙子：", p.tasks[idx].wordCount);
-    if (count !== null) {
-        p.tasks[idx].wordCount = parseInt(count) || 0;
-        p.tasks[idx].done = p.tasks[idx].wordCount >= p.tasks[idx].targetWords;
+    const task = p.tasks[idx];
+    
+    const newCount = prompt(`乖地獄狗「${task.text}」再次搬運上好美沙：`, task.wordCount);
+    if (newCount !== null) {
+        task.wordCount = parseInt(newCount) || 0;
+        task.done = (task.wordCount >= task.targetWords);
         renderAndSync();
     }
 }
@@ -99,7 +113,7 @@ function updateTaskWordCount(owner, idx) {
 function addTask(e) {
     if (e.key === 'Enter' && e.target.value.trim() !== "") {
         const p = partners.find(p => p.name === myName);
-        if (!p) return alert("新來的爆上名啊！");
+        if (!p) return alert("新來的報上名啊！");
         const target = prompt("設定目標字數：", 500);
         p.tasks.push({ text: e.target.value, done: false, wordCount: 0, targetWords: parseInt(target) || 500 });
         e.target.value = "";
@@ -108,7 +122,7 @@ function addTask(e) {
 }
 
 function addNewPartner() {
-    if (partners.some(p => p.name === myName)) return alert("你已經在牆上了！");
+    if (partners.some(p => p.name === myName)) return alert("你的靈魂已被禁錮於此。");
     partners.push({ name: myName, tasks: [] });
     renderAndSync();
 }
