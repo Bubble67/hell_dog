@@ -1,30 +1,34 @@
+/* --- 1. 整體風格--- */
 :root {
-    --bg-color: #0f0f1a; --card-color: #1a1a2e; 
-    --accent-color: #e94560; --text-color: #e0e0e0; 
-    --highlight-color: #ffd700; --secondary-color: #533483;
+    --bg-color: #0f0f1a;
+    --card-color: #1a1a2e;
+    --accent-color: #e94560;
+    --secondary-color: #533483;
+    --text-color: #e0e0e0;
+    --highlight-color: #ffd700;
 }
 
 body { 
-    font-family: sans-serif; background: var(--bg-color); 
+    font-family: 'Helvetica Neue', Arial, sans-serif; 
+    background: var(--bg-color); 
     background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0f0f1a 100%);
-    color: var(--text-color); padding: 20px; line-height: 1.6; margin: 0; min-height: 100vh;
+    color: var(--text-color); 
+    padding: 20px; 
+    line-height: 1.6; 
+    margin: 0; 
+    min-height: 100vh;
 }
 
-.container { max-width: 700px; margin: 0 auto; }
-.nav-header { margin-bottom: 20px; }
-.home-link { color: var(--accent-color); text-decoration: none; font-weight: bold; }
+.container, .main-wrapper { 
+    max-width: 1000px; 
+    margin: 0 auto; 
+}
 
-.log-container { position: relative; }
+/* --- 2. 角噗舞台 --- */
 .log-display { 
     background: #000; border: 1px solid #333; padding: 25px; border-radius: 20px; 
     min-height: 400px; margin-bottom: 30px; box-shadow: inset 0 0 30px #000;
     display: flex; flex-direction: column; gap: 20px; overflow-y: auto; max-height: 60vh;
-}
-
-.chat-top-btn {
-    position: absolute; bottom: 45px; right: 20px;
-    background: rgba(233, 69, 96, 0.4); color: white; border: 1px solid var(--accent-color);
-    padding: 4px 8px; border-radius: 6px; font-size: 0.7em; cursor: pointer; z-index: 5;
 }
 
 .speech-brick {
@@ -39,46 +43,109 @@ body {
     padding: 0 8px; color: var(--highlight-color); font-size: 0.8em; font-weight: bold;
     border: 1px solid #333; border-radius: 4px;
 }
-.is-me .author-tag { border-color: var(--accent-color); color: var(--accent-color); }
 
-.brick-text { white-space: pre-wrap; word-break: break-all; margin-top: 5px; }
 .brick-signal { text-align: center; color: var(--accent-color); font-style: italic; font-size: 0.9em; margin: 10px 0; }
 
-.input-area.is-locked {
-    pointer-events: none;
+.input-area.is-locked { pointer-events: none; }
+.input-area.is-locked .tool-bar { pointer-events: auto; opacity: 1; filter: none; }
+.input-area.is-locked textarea, .input-area.is-locked .main-send-btn { opacity: 0.4; filter: grayscale(1); cursor: not-allowed; }
+
+/* --- 3. 懺悔進度 --- */
+.partner-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 25px;
+    margin-top: 30px;
 }
 
-.input-area.is-locked .tool-bar {
-    pointer-events: auto;
-    opacity: 1;
-    filter: none;
+.partner-card {
+    background: var(--card-color);
+    border-radius: 15px;
+    padding: 20px;
+    border: 1px solid #333;
+    transition: 0.3s;
+    position: relative;
 }
 
-/*舞台關閉期間讓輸入框呈現灰色*/
-.input-area.is-locked textarea,
-.input-area.is-locked .main-send-btn {
-    opacity: 0.4;
-    filter: grayscale(1);
-    cursor: not-allowed;
+.partner-card:hover { border-color: var(--secondary-color); }
+
+.partner-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
 }
 
-.input-area.is-locked .pack-btn.ready {
-    pointer-events: auto;
-    opacity: 1;
+.partner-name {
+    font-size: 1.2em;
     color: var(--highlight-color);
+    font-weight: bold;
 }
 
-.change-name-btn { background: rgba(233, 69, 96, 0.1); border: 1px solid var(--accent-color); color: var(--accent-color); padding: 4px 10px; border-radius: 6px; cursor: pointer; font-size: 0.75em; }
-.tool-bar { display: flex; gap: 8px; margin-bottom: 10px; }
-.tool-btn { background: #111; border: 1px solid #444; color: #888; padding: 5px 12px; border-radius: 6px; font-size: 0.75em; cursor: pointer; }
+/* 進度條 */
+.ind-progress-container {
+    background: #111;
+    height: 8px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    overflow: hidden;
+}
 
-textarea { width: 100%; height: 80px; background: #000; border: 1px solid #555; color: white; padding: 15px; border-radius: 10px; resize: none; box-sizing: border-box; outline: none; }
+.ind-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+    width: 0%;
+    transition: width 0.4s ease-out;
+}
 
-.send-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; }
+/* 任務清單 */
+.task-list { list-style: none; padding: 0; margin: 0; }
+.task-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 0;
+    border-bottom: 1px solid #2a2a3a;
+}
+
+.check-box {
+    width: 18px; height: 18px; border: 2px solid var(--accent-color);
+    border-radius: 4px; cursor: pointer; flex-shrink: 0;
+}
+.check-box.done { background: var(--accent-color); position: relative; }
+.check-box.done::after { content: "✓"; color: white; font-size: 12px; position: absolute; left: 2px; top: -2px; }
+
+.task-text { flex: 1; font-size: 0.95em; cursor: pointer; }
+.task-text.done { text-decoration: line-through; color: #666; }
+
+/* 加入按鈕與輸入框 */
+.add-partner-btn {
+    background: transparent;
+    border: 2px dashed #444;
+    color: #666;
+    padding: 40px 20px;
+    border-radius: 15px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+.add-partner-btn:hover { border-color: var(--accent-color); color: var(--accent-color); }
+
+.input-mini {
+    background: rgba(0,0,0,0.3);
+    border: 1px solid #444;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 6px;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 10px;
+}
+
+/* --- 4. 輔助元件與動畫 --- */
 .main-send-btn { background: var(--accent-color); color: white; border: none; padding: 8px 20px; border-radius: 8px; font-weight: bold; cursor: pointer; }
 .main-send-btn:disabled { background: #333; color: #666; cursor: not-allowed; }
 
-.pack-btn { background: none; border: none; color: #666; cursor: pointer; font-size: 0.7em; text-decoration: underline; margin-right: 10px; }
-.pack-btn.ready { color: var(--highlight-color); font-weight: bold; }
-
-@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } } 
+@keyframes slideUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
