@@ -6,8 +6,8 @@ let partners = [];
 let lastDataString = "";
 
 // 偵測目前在哪一頁
-const playInput = document.getElementById('play-input'); //角噗
-const partnerGrid = document.getElementById('partner-grid'); //任務追蹤
+const playInput = document.getElementById('play-input'); // 角噗
+const partnerGrid = document.getElementById('partner-grid'); // 任務追蹤
 const sendBtn = document.getElementById('send-btn');
 const packBtn = document.getElementById('pack-btn');
 const inputContainer = document.getElementById('input-container');
@@ -22,6 +22,25 @@ function updateNameDisplay() {
 }
 
 // --- 2. 任務系統 ---
+
+// 【新增】地獄打字機統計邏輯
+function countWords() {
+    const draftArea = document.getElementById('draft-area');
+    if (!draftArea) return;
+
+    const text = draftArea.value;
+    const cleanText = text.replace(/\s/g, ''); // 排除所有空格後的字數
+    
+    // 更新介面上的計數器
+    const charEl = document.getElementById('char-count');
+    const totalEl = document.getElementById('total-count');
+    
+    if (charEl) charEl.textContent = cleanText.length;
+    if (totalEl) totalEl.textContent = text.length;
+
+    // 自動保存草稿到本地快取，防止重新整理後消失
+    localStorage.setItem('hell_draft_temp', text);
+}
 
 async function fetchAllProgress() {
     if (!partnerGrid) return;
@@ -77,22 +96,14 @@ function renderPartners() {
     }).join('') + addButtonHTML;
 }
 
-// 任務操作
 function toggleTask(ownerName, idx) {
     if (ownerName !== myName) return alert("壞!地獄狗!不可以亂碰！");
-    
     const p = partners.find(p => p.name === myName);
     const task = p.tasks[idx];
-
-    // 如果完成字數<目標字數，且使用者想要「勾選為完成」
-    if (!task.done) {
-        if (task.wordCount < task.targetWords) {
-            alert("休想蒙混過關！");
-            return; 
-        }
+    if (!task.done && task.wordCount < task.targetWords) {
+        alert("休想蒙混過關！");
+        return; 
     }
-    // ----------------------
-
     task.done = !task.done; 
     renderAndSync();
 }
@@ -101,7 +112,6 @@ function updateTaskWordCount(ownerName, idx) {
     if (ownerName !== myName) return alert("別干涉不屬於你的靈魂。");
     const p = partners.find(p => p.name === myName);
     const task = p.tasks[idx];
-    
     const newCount = prompt(`乖地獄狗「${task.text}」再次搬運上好美沙：`, task.wordCount);
     if (newCount !== null) {
         task.wordCount = parseInt(newCount) || 0;
@@ -147,7 +157,6 @@ async function renderLogs(forceUpdate = false) {
         if (!forceUpdate && JSON.stringify(data) === lastDataString) return;
         lastDataString = JSON.stringify(data);
         roleplayLogs = data;
-
         if (roleplayLogs.length > 0) {
             setStageStatus(roleplayLogs[roleplayLogs.length - 1].text !== "汪汪。");
         }
@@ -184,16 +193,23 @@ async function insertSignal(signal) {
 updateNameDisplay();
 
 // 根據所在頁面啟動對應循環
-if (partnerGrid) { // 任務頁
+if (partnerGrid) { 
     fetchAllProgress();
     setInterval(fetchAllProgress, 10000);
+
+    // 【新增】草稿恢復邏輯：載入時檢查是否有未完成的靈魂重量
+    const savedDraft = localStorage.getItem('hell_draft_temp');
+    const draftArea = document.getElementById('draft-area');
+    if (savedDraft && draftArea) {
+        draftArea.value = savedDraft;
+        countWords(); // 立即重新計算
+    }
 }
 
-if (playInput) { // 角噗頁
+if (playInput) { 
     renderLogs(true);
     setInterval(() => renderLogs(false), 5000);
     
-    // 電腦版 Enter 送出監聽
     playInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
             e.preventDefault();

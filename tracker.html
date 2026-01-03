@@ -11,9 +11,23 @@
         <header style="text-align:center;">
             <h1>地獄寫字狗進度牆</h1>
         </header>
+            <div class="main-wrapper">
+    <header style="text-align:center;">
+        <h1>地獄寫字狗進度牆</h1>
+        <p class="subtitle">—— 每隻狗勾貢獻一塊磚，沙堡終將高聳入雲 ——</p>
+    </header>
 
-        <div class="partner-grid" id="partner-grid"></div>
-    </div>
+    <section class="tool-section">
+        <div class="tool-title">✍️ 地獄打字機（創作草稿區）</div>
+        <textarea id="draft-area" placeholder="在此投入沙粒，緩緩秤出你靈魂的重量……" oninput="countWords()"></textarea>
+        <div class="counter-display">
+            目前累計：<span id="char-count" class="counter-val">0</span> 字（不含空格） | 
+            含標點：<span id="total-count" class="counter-val">0</span>
+        </div>
+    </section>
+
+    <div class="partner-grid" id="partner-grid"></div>
+</div>
 
     <script src="script.js"></script>
 </body>
