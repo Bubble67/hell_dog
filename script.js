@@ -1,19 +1,65 @@
 // --- 1. 配置與初始化 ---
-const GAS_URL = "https://script.google.com/macros/s/AKfycbyv0rH5iysKoMn1x_F1iC8rh4fpmmC7-3D2_mZ1Yi-r4kB93QxOYx8MCLDYhXOdw4BMdg/exec"; 
+const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec";
+let myName = localStorage.getItem('hellCodename') || "無名地獄狗";
+let partners = [];
 
-let myName = localStorage.getItem('hellCodename') || "未知狗狗";
-let roleplayLogs = []; 
-let lastDataString = ""; 
-
-const playInput = document.getElementById('play-input');
-const sendBtn = document.getElementById('send-btn');
-const packBtn = document.getElementById('pack-btn');
-const inputContainer = document.getElementById('input-container');
-
-function updateNameDisplay() {
-    const dogEl = document.getElementById('current-dog');
-    if (dogEl) dogEl.textContent = "當前靈魂：" + myName;
+// --- 1. 從伺服器抓取全體進度 ---
+async function fetchAllProgress() {
+    try {
+        const response = await fetch(`${GAS_URL}?mode=tasks`);
+        const data = await response.json();
+        // 將 GAS 資料轉換為前端格式
+        partners = data.map((item, index) => ({
+            id: index,
+            name: item.name,
+            tasks: item.tasks
+        }));
+        renderPartners();
+    } catch (e) { console.error("抓取進度失敗", e); }
 }
+
+// --- 2. 推送我的進度到伺服器 ---
+async function syncMyProgress() {
+    const myData = partners.find(p => p.name === myName);
+    if (!myData) return;
+
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({
+                type: 'sync_task',
+                author: myName,
+                tasks: myData.tasks
+            })
+        });
+        console.log("進度已同步至沙堡總部");
+    } catch (e) { console.error("同步失敗", e); }
+}
+
+// 修改原本的任務操作函式，加入同步邏輯
+function toggleTask(partnerId, taskIdx) {
+    const p = partners.find(p => p.id === partnerId);
+    if (p.name !== myName) return alert("你不能幫別的狗狗勾選任務！");
+    
+    p.tasks[taskIdx].done = !p.tasks[taskIdx].done;
+    renderAndSync();
+}
+
+function renderAndSync() {
+    renderPartners();
+    syncMyProgress();
+}
+
+// 點擊「如果你也掉進地獄」改為「加入進度牆」
+function addNewPartner() {
+    if (partners.some(p => p.name === myName)) return alert("你的靈魂被禁錮於此！");
+    partners.push({ id: Date.now(), name: myName, tasks: [] });
+    renderAndSync();
+}
+
+// 啟動：每 10 秒自動刷新全體進度
+setInterval(fetchAllProgress, 10000);
+fetchAllProgress();
 
 // 控制舞台開關介面
 function setStageStatus(isOpen) {
