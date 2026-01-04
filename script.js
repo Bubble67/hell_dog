@@ -1,23 +1,194 @@
-// --- 1. 配置與初始化 ---
+// --- 1. 全域配置 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec";
 let myName = localStorage.getItem('hellCodename') || "無名地獄狗";
 let roleplayLogs = [];
 let partners = [];
 let lastDataString = "";
 
-// 取得頁面元素
-const playInput = document.getElementById('play-input');
-const partnerGrid = document.getElementById('partner-grid');
-const sendBtn = document.getElementById('send-btn');
-const inputContainer = document.getElementById('input-container');
+// --- 2. 頁面偵測與初始化 ---
+document.addEventListener('DOMContentLoaded', () => {
+    updateNameDisplay();
 
-// 更新顯示狗名
-function updateNameDisplay() {
-    const dogEl = document.getElementById('current-dog');
-    if (dogEl) dogEl.textContent = "當前靈魂：" + myName;
+    // 偵測進度牆頁面 (tracker.html)
+    if (document.getElementById('partner-grid')) {
+        initTrackerPage();
+    }
+
+    // 偵測角噗頁面 (interaction.html)
+    if (document.getElementById('play-input')) {
+        initInteractionPage();
+    }
+
+    // 偵測測驗頁面 (quiz.html)
+    if (document.getElementById('question-container')) {
+        initQuizPage();
+    }
+});
+
+// --- 3. 趣味狗狗測驗 ---
+function initQuizPage() {
+    // 題目資料庫
+    const questions = [
+        {
+            text: "1. 你剛死掉，醒來發現自己變成狗。你的第一反應是？",
+            options: [
+                { text: "A. 啊？我還有想做的事沒有做！", type: "shiba" },
+                { text: "B. 太好了，終於不用當人了！", type: "golden" },
+                { text: "C. 誰把我變成狗的？出來打我啊！", type: "husky" },
+                { text: "D. 低頭舔了舔毛，接受現實。", type: "dachshund" }
+            ]
+        },
+        {
+            text: "2. 你走進「地獄狗狗公園」，第一眼看到的景象是？",
+            options: [
+                { text: "A. 狗群圍著噴水池開詩會", type: "dachshund" },
+                { text: "B. 地獄管理員在賣狗骨頭咖啡", type: "golden" },
+                { text: "C. 火焰樹上掛滿咬壞的筆電", type: "husky" },
+                { text: "D. 有隻狗在對月長嚎：「給我Wi-Fi！」", type: "shiba" }
+            ]
+        },
+        {
+            text: "3. 一位戴著墨鏡的哈士奇問你：「你的罪是什麼？」你回答...",
+            options: [
+                { text: "A. 抄襲", type: "dachshund" },
+                { text: "B. 通姦", type: "golden" },
+                { text: "C. 火鍋加芋頭", type: "husky" },
+                { text: "D. 我只是太誠實地活著", type: "shiba" }
+            ]
+        },
+        {
+            text: "4. 爪子打字不方便，你決定怎麼創作？",
+            options: [
+                { text: "A. 用鼻子點螢幕", type: "golden" },
+                { text: "B. 向發明狗求助", type: "shiba" },
+                { text: "C. 直接吠出詩", type: "husky" },
+                { text: "D. 咬筆在地上寫", type: "dachshund" }
+            ]
+        }
+    ];
+
+    // 結果資料庫
+    const results = {
+        shiba: {
+            name: "柴犬",
+            desc: "地獄的完美主義者。在世時總想控制一切，下地獄後仍然焦慮地排隊整理狗狗公園的垃圾桶。",
+            crime: "過度批評、情緒潔癖、為了正確犧牲快樂",
+            style: "句構精準、充滿結構強迫與節奏潔癖",
+            hell: "每天重新打掃「自己寫過的字」"
+        },
+        golden: {
+            name: "黃金獵犬",
+            desc: "地獄的取悅狂信徒。對每個靈魂都搖尾巴，連惡魔也會被牠的笑容融化。可惜沒人要求牠微笑，但牠依然笑著。",
+            crime: "討好型人格、偽善、無止盡的善意過勞",
+            style: "暖心、療癒、卻總缺少一點真誠的憤怒",
+            hell: "被迫每天稱讚 999 隻狗，不許重複詞彙"
+        },
+        husky: {
+            name: "哈士奇",
+            desc: "地獄的瘋狂詩人。靈感過多、理智過少。在地獄裡最愛對月嚎叫、再把月亮寫成自由詩。",
+            crime: "反社會創作、過度浪漫、拖稿三千年",
+            style: "破碎、詩意、極端跳tone",
+            hell: "所有作品都會被自己下一秒推翻"
+        },
+        dachshund: {
+            name: "臘腸犬",
+            desc: "地獄的固執守舊派。腳短但志氣長。覺得自己寫的文體才是真正的文學。對新事物會皺鼻子，卻又偷偷在半夜學年輕狗的語氣。",
+            crime: "傲慢、守舊、嘴硬心軟",
+            style: "考究、慢工出細活、字字如骨頭",
+            hell: "永遠卡在第一章，不願刪字"
+        }
+    };
+
+    let currentQuestion = 0;
+    let scores = { shiba: 0, golden: 0, husky: 0, dachshund: 0 };
+
+    function initQuiz() {
+        showQuestion(0);
+    }
+
+    function showQuestion(index) {
+        const container = document.getElementById('question-container');
+        container.innerHTML = ''; 
+        
+        const progress = ((index) / questions.length) * 100;
+        document.getElementById('progress').style.width = progress + '%';
+
+        const q = questions[index];
+        
+        const qDiv = document.createElement('div');
+        qDiv.className = 'question-box active';
+        
+        const title = document.createElement('div');
+        title.className = 'question-text';
+        title.textContent = q.text;
+        qDiv.appendChild(title);
+
+        const optsDiv = document.createElement('div');
+        optsDiv.className = 'options';
+
+        q.options.forEach(opt => {
+            const btn = document.createElement('button');
+            btn.className = 'option-btn';
+            btn.textContent = opt.text;
+            btn.onclick = () => nextQuestion(opt.type);
+            optsDiv.appendChild(btn);
+        });
+
+        qDiv.appendChild(optsDiv);
+        container.appendChild(qDiv);
+    }
+
+    function nextQuestion(type) {
+        scores[type]++;
+        currentQuestion++;
+
+        if (currentQuestion < questions.length) {
+            showQuestion(currentQuestion);
+        } else {
+            showResult();
+        }
+    }
+
+    function showResult() {
+        document.getElementById('quiz-area').style.display = 'none';
+        document.getElementById('result-area').style.display = 'block';
+
+        let maxScore = 0;
+        let finalType = 'shiba';
+
+        for (let type in scores) {
+            if (scores[type] > maxScore) {
+                maxScore = scores[type];
+                finalType = type;
+            }
+        }
+
+        const res = results[finalType];
+        document.getElementById('res-name').textContent = "你的狗勾是 — " + res.name;
+        document.getElementById('res-desc').textContent = res.desc;
+        document.getElementById('res-crime').textContent = res.crime;
+        document.getElementById('res-style').textContent = res.style;
+        document.getElementById('res-hell').textContent = res.hell;
+    }
+
+    initQuiz();
+    showQuestion(0); 
 }
 
-// 切換名字功能
+// --- 4. 進度牆 ---
+function initTrackerPage() {
+    fetchAllProgress();
+    setInterval(fetchAllProgress, 10000);
+    // 讀取暫存草稿...
+}
+
+// --- 5. 角噗 ---
+function initInteractionPage() {
+    renderLogs(true);
+    setInterval(() => renderLogs(false), 5000);
+    // 監聽 Enter 送出...
+}
+
 function changeName() {
     const n = prompt("重塑靈魂代號：", myName);
     if (n && n.trim() !== "") { 
@@ -28,7 +199,7 @@ function changeName() {
     }
 }
 
-// --- 2. 任務系統 (用於 tracker.html) ---
+// --- 2. 進度追蹤系統 ---
 
 function countWords() {
     const draftArea = document.getElementById('draft-area');
