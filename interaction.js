@@ -83,8 +83,6 @@ async function handleSend() {
         });
         input.value = "";
         renderLogs();
-    } catch (e) {
-        alert("通訊失敗，碑文無法刻下。");
     } finally {
         input.disabled = false;
         input.placeholder = "在此刻下此碑...";
