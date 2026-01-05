@@ -1,0 +1,142 @@
+// --- 1. 配置與變數 ---
+const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec"; //
+let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "未轉生" }; //
+let lastDataString = "";
+
+// --- 2. 初始化 ---
+document.addEventListener('DOMContentLoaded', () => {
+    updateIdentityDisplay();
+    renderLogs();
+    // 每 5 秒自動重新整理對話紀錄
+    setInterval(renderLogs, 5000); 
+
+    // 支援 PC 端 Enter 送出 (Shift+Enter 換行)
+    document.getElementById('play-input').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+            e.preventDefault();
+            handleSend();
+        }
+    });
+});
+
+// --- 3. 核心功能函式 ---
+
+// 更新畫面上顯示的當前角色資訊
+function updateIdentityDisplay() {
+    const display = document.getElementById('current-dog');
+    if (display) {
+        display.textContent = `當前靈魂：${myIdentity.name} (${myIdentity.breed})`; //
+    }
+}
+
+// 渲染對話紀錄
+async function renderLogs() {
+    const display = document.getElementById('log-display');
+    try {
+        const response = await fetch(GAS_URL);
+        const data = await response.json();
+        
+        // 如果內容沒變則不重複渲染，節省效能
+        if (JSON.stringify(data) === lastDataString) return;
+        lastDataString = JSON.stringify(data);
+
+        display.innerHTML = data.map(log => {
+            // 處理特殊信號 (汪！/ 汪汪。)
+            if (log.text === "汪！" || log.text === "汪汪。") {
+                return `<div class="brick-signal">── ${log.author}：${log.text} ──</div>`;
+            }
+            // 處理一般對話，若是自己的訊息則套用 .is-me 樣式
+            return `
+                <div class="speech-brick ${log.author === myIdentity.name ? 'is-me' : ''}">
+                    <div class="author-tag">${log.author}</div>
+                    <div class="brick-text">${log.text}</div>
+                </div>`;
+        }).join('');
+        
+        // 滾動到最底部
+        display.scrollTop = display.scrollHeight;
+    } catch (e) {
+        console.error("對話載入失敗", e);
+    }
+}
+
+// 送出訊息
+async function handleSend() {
+    const input = document.getElementById('play-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    input.disabled = true;
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ author: myIdentity.name, text: text })
+        });
+        input.value = "";
+        renderLogs();
+    } catch (e) {
+        alert("通訊失敗，碑文無法刻下。");
+    } finally {
+        input.disabled = false;
+        input.focus();
+    }
+}
+
+// 插入特殊信號
+async function insertSignal(signal) {
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ author: myIdentity.name, text: signal })
+        });
+        renderLogs();
+    } catch (e) {
+        alert("訊號傳遞失敗。");
+    }
+}
+
+// 打包目前的對話紀錄
+function packLogs() {
+    const logs = JSON.parse(lastDataString || "[]");
+    if (logs.length === 0) return alert("舞台上空無一物，無法打包。");
+
+    const content = logs.map(log => {
+        if (log.text === "汪！" || log.text === "汪汪。") return `\n── ${log.author}：${log.text} ──\n`;
+        return `【${log.author}】: ${log.text}`;
+    }).join('\n');
+
+    const formattedText = `【地獄狗角噗紀錄】\n時間：${new Date().toLocaleString()}\n--------------------------\n${content}\n--------------------------`;
+
+    navigator.clipboard.writeText(formattedText).then(() => {
+        alert("📦 紀錄已複製到剪貼簿！");
+        // 這裡可以跳轉到 Google Doc
+        window.open('https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.xpmp99ar9j6c', '_blank');
+    });
+}
+
+// 抹除舞台 (清除雲端資料)
+function clearStageManually() {
+    if (confirm("確定要粉碎目前的舞台嗎？這會清除雲端所有紀錄。")) {
+        fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: 'clear' }) })
+            .then(() => renderLogs());
+    }
+}
+
+// 輔助功能：切換名字
+function changeName() {
+    const newName = prompt("重新輸入你的地獄代號：", myIdentity.name);
+    if (newName) {
+        myIdentity.name = newName;
+        localStorage.setItem('hellDogIdentity', JSON.stringify(myIdentity));
+        updateIdentityDisplay();
+    }
+}
+
+// 輔助功能：換行
+function insertNewLine() {
+    const input = document.getElementById('play-input');
+    const start = input.selectionStart;
+    input.value = input.value.substring(0, start) + "\n" + input.value.substring(input.selectionEnd);
+    input.selectionStart = input.selectionEnd = start + 1;
+    input.focus();
+}
