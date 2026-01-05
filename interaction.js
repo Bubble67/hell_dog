@@ -1,5 +1,5 @@
 // --- 1. 配置與變數 ---
-const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec";
+const GAS_URL = "https://script.google.com/macros/s/AKfycbywdOnwMDAEG5PkNZgkQlNXaF8BGPVn3ZdRWueepOek4gqVKGLQJqC-Q1XM4sOyL3hCJw/exec";
 let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "遊蕩靈魂" };
 let lastDataString = "";
 
