@@ -1,6 +1,5 @@
 // --- 1. 配置與變數 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec";
-// 預設身分補足 breed，避免顯示 undefined
 let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "遊蕩靈魂" };
 let lastDataString = "";
 
@@ -21,12 +20,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
-// --- 3. 核心功能函式 ---
+// --- 3. 功能函式 ---
 
 function updateIdentityDisplay() {
     const display = document.getElementById('current-dog');
     if (display) {
-        // 確保 breed 存在
         const breedText = myIdentity.breed || "遊蕩靈魂";
         display.textContent = `當前靈魂：${myIdentity.name} (${breedText})`;
     }
@@ -38,7 +36,6 @@ async function renderLogs() {
     try {
         const response = await fetch(GAS_URL);
         const data = await response.json();
-        
         if (JSON.stringify(data) === lastDataString) return;
         lastDataString = JSON.stringify(data);
 
@@ -52,7 +49,6 @@ async function renderLogs() {
                     <div class="brick-text">${log.text}</div>
                 </div>`;
         }).join('');
-        
         display.scrollTop = display.scrollHeight;
     } catch (e) {
         console.error("對話載入失敗", e);
@@ -69,11 +65,9 @@ function scrollToTop() {
 async function handleSend() {
     const input = document.getElementById('play-input');
     const text = input.value.trim();
-    if (!text) return;
+    if (!text || input.disabled) return;
 
-    // 「訊號狗努力中」狀態提示
-    const originalPlaceholder = input.placeholder;
-    input.placeholder = "訊號狗努力中……";
+    input.placeholder = "訊號狗努力中……"; // 顯示提示
     input.disabled = true;
 
     try {
@@ -83,6 +77,8 @@ async function handleSend() {
         });
         input.value = "";
         renderLogs();
+    } catch (e) {
+        alert("通訊失敗，碑文無法刻下。");
     } finally {
         input.disabled = false;
         input.placeholder = "在此刻下此碑...";
@@ -92,8 +88,6 @@ async function handleSend() {
 
 async function insertSignal(signal) {
     const input = document.getElementById('play-input');
-    const originalPlaceholder = input.placeholder;
-    
     input.placeholder = "訊號狗努力中……";
     try {
         await fetch(GAS_URL, {
@@ -104,34 +98,28 @@ async function insertSignal(signal) {
     } catch (e) {
         alert("訊號傳遞失敗。");
     } finally {
-        input.placeholder = originalPlaceholder;
+        input.placeholder = "在此刻下此碑...";
     }
 }
 
 function packLogs() {
     const logs = JSON.parse(lastDataString || "[]");
     if (logs.length === 0) return alert("舞台上空無一物，無法打包。");
-
     const content = logs.map(log => {
         if (log.text === "汪！" || log.text === "汪汪。") return `\n── ${log.author}：${log.text} ──\n`;
         return `【${log.author}】: ${log.text}`;
     }).join('\n');
-
     const formattedText = `【地獄狗角噗紀錄】\n時間：${new Date().toLocaleString()}\n--------------------------\n${content}\n--------------------------`;
-
     navigator.clipboard.writeText(formattedText).then(() => {
-        alert("📦 紀錄已複製到剪貼簿！");
+        alert("📦 紀錄已複製！");
         window.open('https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.xpmp99ar9j6c', '_blank');
     });
 }
 
 function clearStageManually() {
-    if (confirm("確定要粉碎目前的舞台嗎？這會清除雲端所有紀錄。")) {
+    if (confirm("確定要粉碎目前的舞台嗎？")) {
         fetch(GAS_URL, { method: 'POST', body: JSON.stringify({ type: 'clear' }) })
-            .then(() => {
-                lastDataString = ""; // 重設緩存
-                renderLogs();
-            });
+            .then(() => { lastDataString = ""; renderLogs(); });
     }
 }
 
