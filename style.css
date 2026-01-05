@@ -1,4 +1,5 @@
 /* --- 1. 入口頁及整體風格--- */
+
 :root {
             --bg-color: #0f0f1a;
             --card-color: #1a1a2e;
@@ -71,30 +72,6 @@
             margin-top: 5px;
             font-weight: normal;
         }
-:root {
-    --bg-color: #0f0f1a;
-    --card-color: #1a1a2e;
-    --accent-color: #e94560;
-    --secondary-color: #533483;
-    --text-color: #e0e0e0;
-    --highlight-color: #ffd700;
-}
-
-body { 
-    font-family: 'Helvetica Neue', Arial, sans-serif; 
-    background: var(--bg-color); 
-    background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0f0f1a 100%);
-    color: var(--text-color); 
-    padding: 20px; 
-    line-height: 1.6; 
-    margin: 0; 
-    min-height: 100vh;
-}
-
-.container, .main-wrapper { 
-    max-width: 1000px; 
-    margin: 0 auto; 
-}
 
 /* --- 2. 角噗舞台 --- */
 .log-display { 

@@ -2,7 +2,6 @@
 const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec";
 let myName = localStorage.getItem('hellCodename') || "無名地獄狗";
 let roleplayLogs = [];
-let partners = [];
 let lastDataString = "";
 
 // --- 2. 頁面偵測與初始化 ---
@@ -48,7 +47,7 @@ function initQuizPage() {
             ]
         },
         {
-            text: "3. 一位戴著墨鏡的哈士奇問你：「你的罪是什麼？」你回答...",
+            text: "3. 一位戴著墨鏡的哈士奇問你：「你的罪是什麼？」你回答……",
             options: [
                 { text: "A. 抄襲", type: "dachshund" },
                 { text: "B. 通姦", type: "golden" },
@@ -199,106 +198,181 @@ function changeName() {
     }
 }
 
-// --- 2. 進度追蹤系統 ---
+// --- 6. 進度追蹤系統 ---
 
-function countWords() {
-    const draftArea = document.getElementById('draft-area');
-    if (!draftArea) return;
-    const text = draftArea.value;
-    const cleanText = text.replace(/\s/g, ''); 
-    const charEl = document.getElementById('char-count');
-    const totalEl = document.getElementById('total-count');
-    if (charEl) charEl.textContent = cleanText.length;
-    if (totalEl) totalEl.textContent = text.length;
-    localStorage.setItem('hell_draft_temp', text);
+let partners = JSON.parse(localStorage.getItem('sandcastlePartners')) || [
+    { id: 1, name: "小黑/麻糬", tasks: [{ text: "拾取沙粒投入", done: true, wordCount: 500, targetWords: 500 }] }
+];
+let records = JSON.parse(localStorage.getItem('hellRecords')) || [];
+
+function autoSave() {
+    const text = document.getElementById('draft-area').value;
+    localStorage.setItem('hellDraft', text);
+    const cleanText = text.replace(/\s/g, '');
+    document.getElementById('char-count').textContent = cleanText.length;
+    document.getElementById('total-count').textContent = text.length;
 }
 
-async function fetchAllProgress() {
-    if (!partnerGrid) return;
-    try {
-        const response = await fetch(`${GAS_URL}?mode=tasks`);
-        const data = await response.json();
-        partners = data.map((item, index) => ({ id: index, name: item.name, tasks: item.tasks }));
-        renderPartners();
-    } catch (e) { console.error("同步進度失敗", e); }
-}
+function castToStone() {
+    const text = document.getElementById('draft-area').value;
+    const author = document.getElementById('author-name').value || "無名寫字狗";
+    const docUrl = document.getElementById('doc-select').value;
+    const count = document.getElementById('char-count').textContent;
 
-async function syncMyProgress() {
-    const myData = partners.find(p => p.name === myName);
-    if (!myData) return;
-    try {
-        await fetch(GAS_URL, {
-            method: 'POST',
-            body: JSON.stringify({ type: 'sync_task', author: myName, tasks: myData.tasks })
-        });
-    } catch (e) { console.error("同步至雲端失敗", e); }
-}
+    if (!text.trim()) return alert("這是無字天書嗎……");
 
-function renderPartners() {
-    if (!partnerGrid) return;
-    const addButtonHTML = `<button class="add-partner-btn" onclick="addNewPartner()"><span style="font-size: 2em;">+</span><span>加入進度牆</span></button>`;
-    partnerGrid.innerHTML = partners.map(p => {
-        let currentWords = 0, goalWords = 0;
-        p.tasks.forEach(t => { currentWords += (t.wordCount || 0); goalWords += (t.targetWords || 500); });
-        const progress = goalWords === 0 ? 0 : Math.min(100, Math.round((currentWords / goalWords) * 100));
-        const isMe = p.name === myName;
-        return `
-            <div class="partner-card" style="${isMe ? 'border-color: var(--accent-color)' : ''}">
-                <div class="partner-header"><span class="partner-name">${p.name}</span><b>${progress}%</b></div>
-                <div class="ind-progress-container"><div class="ind-progress-bar" style="width: ${progress}%"></div></div>
-                <ul class="task-list">
-                    ${p.tasks.map((t, idx) => `
-                        <li class="task-item">
-                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask('${p.name}', ${idx})"></div>
-                            <span class="task-text ${t.done ? 'done' : ''}" onclick="updateTaskWordCount('${p.name}', ${idx})">${t.text} (${t.wordCount}/${t.targetWords})</span>
-                        </li>
-                    `).join('')}
-                </ul>
-                ${isMe ? `<input type="text" class="input-mini" placeholder="+ 新增任務" onkeypress="handleTaskAdd(event)">` : ''}
-            </div>
-        `;
-    }).join('') + addButtonHTML;
-}
+    const formatted = `【狗狗沙堡零件搬運】\n寫字狗代號：${author}\n時間：${new Date().toLocaleString()}\n字數：${count}\n--------------------------\n${text}\n--------------------------`;
 
-function handleTaskAdd(e) {
-    if (e.key === 'Enter' && e.target.value.trim() !== "") {
-        const p = partners.find(p => p.name === myName);
-        if (!p) return alert("請先加入進度牆");
-        const target = prompt("設定目標字數：", 500);
-        p.tasks.push({ text: e.target.value, done: false, wordCount: 0, targetWords: parseInt(target) || 500 });
-        e.target.value = "";
-        renderAndSync();
-    }
-}
-
-function toggleTask(ownerName, idx) {
-    if (ownerName !== myName) return;
-    const p = partners.find(p => p.name === myName);
-    p.tasks[idx].done = !p.tasks[idx].done;
-    renderAndSync();
-}
-
-function updateTaskWordCount(ownerName, idx) {
-    if (ownerName !== myName) return;
-    const p = partners.find(p => p.name === myName);
-    const task = p.tasks[idx];
-    const newCount = prompt(`「${task.text}」目前搬運量：`, task.wordCount);
-    if (newCount !== null) {
-        task.wordCount = parseInt(newCount) || 0;
-        task.done = (task.wordCount >= task.targetWords);
-        renderAndSync();
-    }
+    navigator.clipboard.writeText(formatted).then(() => {
+        alert("🔥本零件已完成！搬入沙堡組裝。");
+        saveToLocalRecord(author, count);
+        window.open(docUrl, '_blank');
+    });
 }
 
 function addNewPartner() {
-    if (partners.some(p => p.name === myName)) return alert("你已在牆上。");
-    partners.push({ name: myName, tasks: [] });
-    renderAndSync();
+    const name = prompt("報上你的狗名！：");
+    if (!name) return;
+    partners.push({ id: Date.now(), name, tasks: [] });
+    saveAndRender();
 }
 
-function renderAndSync() { renderPartners(); syncMyProgress(); }
+function addTask(e, pId) {
+    if (e.key === 'Enter' && e.target.value.trim() !== "") {
+        const taskName = e.target.value;
+        let targetInput = prompt(`這塊沙堡零件有多重？`, 500);
+        
+        if (targetInput !== null) {
+            let target = parseInt(targetInput) || 500;
+            
+            // 強制範圍限制
+            if (target < 500) {
+                alert("太少了吧……這什麼豆腐渣工程！！");
+                target = 500;
+            } else if (target > 900) {
+                alert("這麼重的沙子，狗狗搬不動啦！");
+                target = 900;
+            }
 
-// --- 3. 角噗舞台 (用於 interaction.html) ---
+            const p = partners.find(p => p.id === pId);
+            p.tasks.push({ text: taskName, done: false, wordCount: 0, targetWords: target });
+            e.target.value = "";
+            saveAndRender();
+        }
+    }
+}
+
+function updateProgress(pId, tIdx) {
+    const p = partners.find(p => p.id === pId);
+    const task = p.tasks[tIdx];
+    const n = prompt(`更新「${task.text}」目前搬運了多少沙子 (目標 ${task.targetWords})：`, task.wordCount);
+    if (n !== null) {
+        task.wordCount = parseInt(n) || 0;
+        task.done = task.wordCount >= task.targetWords;
+        saveAndRender();
+    }
+}
+
+// 【修復】絕對禁止：字數未達標前禁止手動勾選完成
+function toggleTask(pId, tIdx) {
+    const p = partners.find(p => p.id === pId);
+    const task = p.tasks[tIdx];
+
+    // 如果試圖將未完成任務勾選為完成
+    if (!task.done && task.wordCount < task.targetWords) {
+        alert(`🛑休想蒙混過關！`);
+        return; 
+    }
+
+    task.done = !task.done;
+    saveAndRender();
+}
+
+function deleteTask(pId, tIdx) {
+    if (confirm("半途而廢！但你下定決心就好。")) {
+        partners.find(p => p.id === pId).tasks.splice(tIdx, 1);
+        saveAndRender();
+    }
+}
+
+function removePartner(pId) {
+    if (confirm("真的要跟沙堡說掰掰嗎？")) {
+        partners = partners.filter(p => p.id !== pId);
+        saveAndRender();
+    }
+}
+
+function saveAndRender() {
+    localStorage.setItem('sandcastlePartners', JSON.stringify(partners));
+    const grid = document.getElementById('partner-grid');
+    
+    let cardsHTML = partners.map(p => {
+        const cur = p.tasks.reduce((sum, t) => sum + (t.wordCount || 0), 0);
+        const tar = p.tasks.reduce((sum, t) => sum + (t.targetWords || 0), 0);
+        const progress = tar === 0 ? 0 : Math.round((cur / tar) * 100);
+
+        return `
+            <div class="partner-card">
+                <div class="partner-header">
+                    <span class="partner-name">${p.name}</span>
+                    <span style="color:var(--accent-color)">${progress}%</span>
+                </div>
+                <div class="ind-progress-container"><div class="ind-progress-bar" style="width:${progress}%"></div></div>
+                <ul class="task-list">
+                    ${p.tasks.map((t, i) => `
+                        <li class="task-item">
+                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask(${p.id}, ${i})"></div>
+                            <span class="task-text ${t.done ? 'done' : ''}" onclick="updateProgress(${p.id}, ${i})">
+                                ${t.text} <small style="opacity:0.5">(${t.wordCount}/${t.targetWords})</small>
+                            </span>
+                            <span style="opacity:0.2; cursor:pointer" onclick="deleteTask(${p.id}, ${i})">×</span>
+                        </li>
+                    `).join('')}
+                </ul>
+                <input type="text" class="input-mini" placeholder="+ 敲 Enter 新增任務" onkeypress="addTask(event, ${p.id})">
+                <div style="text-align:right; margin-top:15px;">
+                    <button onclick="removePartner(${p.id})" style="background:none; border:none; color:#444; font-size:0.7em; cursor:pointer;">撤離進度牆</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    const addCardHTML = `
+        <div class="add-partner-card" onclick="addNewPartner()">
+            <div class="plus-icon">+</div>
+            <div style="font-weight:bold;">如果你也掉進地獄的話</div>
+        </div>
+    `;
+    grid.innerHTML = cardsHTML + addCardHTML;
+}
+
+function saveToLocalRecord(author, count) {
+    records.unshift({ author, count, time: new Date().toLocaleTimeString() });
+    records = records.slice(0, 5);
+    localStorage.setItem('hellRecords', JSON.stringify(records));
+    renderRecords();
+}
+
+function renderRecords() {
+    const container = document.getElementById('bricks-container');
+    container.innerHTML = records.map(r => `
+        <li class="task-item" style="border-bottom-style:dashed; color:#888">
+            <span>[${r.time}] <b>${r.author}</b> 搬運了 ${r.count} 粒上好美沙</span>
+        </li>
+    `).join('');
+}
+
+window.onload = () => {
+    const draft = localStorage.getItem('hellDraft') || "";
+    document.getElementById('draft-area').value = draft;
+    document.getElementById('author-name').value = localStorage.getItem('hellCodename') || "";
+    document.getElementById('author-name').oninput = (e) => localStorage.setItem('hellCodename', e.target.value);
+    autoSave();
+    renderRecords();
+    saveAndRender();
+};
+
+// --- 7. 角噗舞台 (用於 interaction.html) ---
 
 function setStageStatus(isOpen) {
     if (!playInput) return;
@@ -398,7 +472,7 @@ function insertNewLine() {
     playInput.focus();
 }
 
-// --- 4. 初始化啟動器 ---
+// --- 8. 初始化啟動器 ---
 
 updateNameDisplay();
 
