@@ -1,6 +1,6 @@
 // --- 1. 配置與變數 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbw6xwfmAuHucUEGq9MXYcyykrRvaDaeJYikQ93KsIW7YgmN6tVaq4UOKp2G2zAuPdkX/exec"; //
-let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "未轉生" }; //
+let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗"}; //
 let lastDataString = "";
 
 // --- 2. 初始化 ---
@@ -82,8 +82,47 @@ async function handleSend() {
     }
 }
 
-// 插入特殊信號
+// --- 新增：回到舞台頂部函式 ---
+function scrollToTop() {
+    const display = document.getElementById('log-display');
+    if (display) {
+        display.scrollTo({ top: 0, behavior: 'smooth' }); // 平滑滾動至頂
+    }
+}
+
+// --- 修改：送出訊息 (handleSend) ---
+async function handleSend() {
+    const input = document.getElementById('play-input');
+    const text = input.value.trim();
+    if (!text) return;
+
+    // 暫存原本的提示文字並更新狀態
+    const originalPlaceholder = input.placeholder;
+    input.placeholder = "訊號狗努力中……";
+    input.disabled = true;
+
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            body: JSON.stringify({ author: myIdentity.name, text: text })
+        });
+        input.value = "";
+        renderLogs();
+    } catch (e) {
+        alert("通訊失敗，碑文無法刻下。");
+    } finally {
+        input.disabled = false;
+        input.placeholder = originalPlaceholder; // 還原提示文字
+        input.focus();
+    }
+}
+
+// --- 修改：插入特殊信號 (insertSignal) ---
 async function insertSignal(signal) {
+    const input = document.getElementById('play-input');
+    const originalPlaceholder = input.placeholder;
+    
+    input.placeholder = "訊號狗努力中……";
     try {
         await fetch(GAS_URL, {
             method: 'POST',
@@ -92,6 +131,8 @@ async function insertSignal(signal) {
         renderLogs();
     } catch (e) {
         alert("訊號傳遞失敗。");
+    } finally {
+        input.placeholder = originalPlaceholder; // 還原提示文字
     }
 }
 
