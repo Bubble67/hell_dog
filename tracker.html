@@ -3,47 +3,41 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>地獄寫字狗沙堡｜進度回報</title>
+    <title>地獄沙堡｜共創建設看板</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="main-wrapper">
-        <div class="nav-header" style="text-align: left; margin-bottom: 20px;">
-            <a href="index.html" style="color: var(--accent-color); text-decoration: none;">🏰 返回地獄入口</a>
+
+<div class="main-wrapper">
+    <header>
+        <h1>地獄沙堡共創清單</h1>
+        <p class="subtitle">—— 每隻狗勾貢獻一塊磚，沙堡終將高聳入雲 ——</p>
+    </header>
+
+    <section class="tool-section">
+        <div class="tool-title">✍️ 地獄打字機（搬運工具）</div>
+        <textarea id="draft-area" placeholder="在此輸入建設內容……" oninput="autoSave()"></textarea>
+        <div class="counter-display">
+            字數統計：<span id="char-count" class="counter-val">0</span> | 含標點：<span id="total-count" class="counter-val">0</span>
         </div>
-
-        <header style="text-align:center; margin-bottom: 30px;">
-            <h1>地獄寫字狗進度牆</h1>
-            <p class="subtitle">—— 每隻狗勾貢獻一塊磚，沙堡終將高聳入雲 ——</p>
-        </header>
-
-        <section class="tool-section">
-            <div class="tool-title">✍️ 地獄打字機</div>
-            <textarea id="draft-area" placeholder="在此投入沙粒，緩緩秤出你靈魂的重量……" oninput="autoSave()"></textarea>
-            <div class="counter-display">
-                字數統計：<span id="char-count" class="counter-val">0</span> | 含標點：<span id="total-count" class="counter-val">0</span>
+        <div style="margin-top: 20px; display: flex; gap: 12px; flex-direction: column;">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="author-name" class="input-mini" placeholder="建設者代號" style="flex: 1; margin: 0;">
+                <select id="doc-select" class="input-mini" style="flex: 1; margin: 0;">
+                    <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.0">🏰 沙堡主城</option>
+                </select>
             </div>
-            
-            <div style="margin-top: 20px; display: flex; gap: 12px; flex-direction: column;">
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="author-name" class="input-mini" placeholder="建設者代號" style="flex: 1; margin: 0;">
-                    <select id="doc-select" class="input-mini" style="flex: 1; margin: 0;">
-                        <option value="https://docs.google.com/document/d/1yhbMQtBR006boJ9OLa7XT-6o31LG0nrIUd3-y6ogrek/edit?tab=t.0">🏰 沙堡主城</option>
-                    </select>
-                </div>
-                <button class="cta-btn" onclick="castToStone()">🔥 鑄造成磚：複製並前往 Google Doc</button>
-            </div>
-            <div id="sync-status" style="font-size: 0.8em; color: #666; margin-top: 15px; text-align: right;">衛星收訊中...</div>
-        </section>
+            <button class="cta-btn" onclick="castToStone()">🔥 鑄造成磚：複製並前往 Google Doc</button>
+        </div>
+    </section>
 
-        <section class="tool-section" style="border-style: dashed; opacity: 0.7;">
-            <div class="tool-title" style="font-size: 0.9em;">📜 本地搬運日誌</div>
-            <ul id="bricks-container" class="task-list" style="font-size: 0.85em;"></ul>
-        </section>
+    <section class="tool-section" style="border-style: dashed; opacity: 0.7;">
+        <div class="tool-title" style="font-size: 0.9em;">📜 本地搬運日誌</div>
+        <ul id="bricks-container" class="task-list" style="font-size: 0.85em;"></ul>
+    </section>
 
-        <div class="partner-grid" id="partner-grid"></div>
-    </div>
-
-    <script src="tracker.js"></script>
+    <div class="partner-grid" id="partner-grid"></div>
+</div>
+<script src="tracker.js"></script>
 </body>
 </html>
