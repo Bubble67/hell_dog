@@ -1,3 +1,4 @@
+const GAS_URL = "https://script.google.com/macros/s/AKfycbzhkXANOIVp2QH3JWa03PRq7KHKZ1d8GShwvGBYYbWfvAlXu5LoszgXeb0J4LmY79cnQw/exec";
 let partners = JSON.parse(localStorage.getItem('sandcastlePartners')) || [
     { id: 1, name: "建設隊長麻糬", tasks: [{ text: "初始化地獄地基", done: true, wordCount: 500, targetWords: 500 }] }
 ];
