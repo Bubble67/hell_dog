@@ -1,22 +1,25 @@
 // --- 1. 配置與變數 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbywdOnwMDAEG5PkNZgkQlNXaF8BGPVn3ZdRWueepOek4gqVKGLQJqC-Q1XM4sOyL3hCJw/exec"; 
+// 這裡很重要：確保讀取到的身分跟你在測驗頁面設定的一樣
 let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "遊蕩靈魂" };
 let partners = []; 
-let records = JSON.parse(localStorage.getItem('hellRecords')) || []; // 本地日誌紀錄
+let records = JSON.parse(localStorage.getItem('hellRecords')) || []; 
 
 // --- 2. 初始化 ---
 document.addEventListener('DOMContentLoaded', () => {
-    // 讀取本地暫存與代號
-    document.getElementById('draft-area').value = localStorage.getItem('hellDraft') || "";
-    document.getElementById('author-name').value = localStorage.getItem('hellCodename') || myIdentity.name;
+    // 同步代號
+    const authorInput = document.getElementById('author-name');
+    if (authorInput) {
+        authorInput.value = localStorage.getItem('hellCodename') || myIdentity.name;
+    }
     
-    autoSave(); // 初始化計數
-    renderRecords(); // 初始化日誌
-    fetchCloudTasks(); // 抓取雲端進度
-    setInterval(fetchCloudTasks, 20000);
+    autoSave(); 
+    renderRecords(); 
+    fetchCloudTasks(); // 從雲端抓取目前的進度牆
+    setInterval(fetchCloudTasks, 15000); // 縮短同步時間，讓你更快看到結果
 });
 
-// --- 3. 打字機核心功能 ---
+// --- 3. 打字機與日誌 (保持測試專用程式的功能) ---
 function autoSave() {
     const text = document.getElementById('draft-area').value;
     localStorage.setItem('hellDraft', text);
@@ -25,7 +28,6 @@ function autoSave() {
     document.getElementById('total-count').textContent = text.length;
 }
 
-// 鑄造成磚功能
 function castToStone() {
     const text = document.getElementById('draft-area').value;
     const author = document.getElementById('author-name').value || "無名寫字狗";
@@ -39,46 +41,29 @@ function castToStone() {
     navigator.clipboard.writeText(formatted).then(() => {
         alert("🔥 磚塊已鑄造！前往文件貼上。");
         saveToLocalRecord(author, count);
-        localStorage.setItem('hellCodename', author); // 記住代號
+        localStorage.setItem('hellCodename', author); 
         window.open(docUrl, '_blank');
     });
 }
 
-function saveToLocalRecord(author, count) {
-    records.unshift({ author, count, time: new Date().toLocaleTimeString() });
-    records = records.slice(0, 5); // 只保留最近 5 筆
-    localStorage.setItem('hellRecords', JSON.stringify(records));
-    renderRecords();
-}
-
-function renderRecords() {
-    const container = document.getElementById('bricks-container');
-    if(!container) return;
-    container.innerHTML = records.map(r => `
-        <li class="task-item" style="border-bottom-style:dashed; color:#888">
-            <span>[${r.time}] <b>${r.author}</b> 搬運了 ${r.count} 粒美沙</span>
-        </li>
-    `).join('');
-}
-
-// --- 4. 進度牆同步功能 ---
+// --- 4. 雲端同步邏輯 ---
 
 async function fetchCloudTasks() {
     const statusEl = document.getElementById('sync-status');
     try {
         const response = await fetch(`${GAS_URL}?mode=tasks`, { cache: 'no-store' });
         const data = await response.json();
-        partners = data;
-        renderProgressWall();
-        statusEl.textContent = "● 雲端同步中";
+        partners = data; // 更新全域的進度資料
+        renderProgressWall(); // 重新畫出牆面
+        if(statusEl) statusEl.textContent = "● 沙堡地基同步中";
     } catch (e) {
-        statusEl.textContent = "○ 離線模式";
+        if(statusEl) statusEl.textContent = "○ 訊號微弱 (離線模式)";
     }
 }
 
 async function syncMyProgress(myTasks) {
     const statusEl = document.getElementById('sync-status');
-    statusEl.textContent = "訊號狗搬運中...";
+    if(statusEl) statusEl.textContent = "🚧 正在搬運磚塊至雲端...";
     try {
         await fetch(GAS_URL, {
             method: 'POST',
@@ -89,39 +74,42 @@ async function syncMyProgress(myTasks) {
                 tasks: myTasks
             })
         });
-        setTimeout(fetchCloudTasks, 1000);
+        setTimeout(fetchCloudTasks, 1000); // 發送後 1 秒強制刷一遍畫面
     } catch (e) {
-        alert("搬運失敗，沙堡磚塊掉在路上了。");
+        alert("搬運失敗！");
     }
 }
 
-// --- 5. 任務管理邏輯 ---
+// --- 5. 任務管理：解決「找不到位置」的關鍵 ---
 
 function addNewPartner() {
-    if (partners.some(p => p.name === myIdentity.name)) return alert("你已經在牆上了！");
-    partners.push({ name: myIdentity.name, tasks: [] });
-    syncMyProgress([]);
+    // 檢查是否已經存在（避免重複加入）
+    const exists = partners.some(p => p.name === myIdentity.name);
+    if (exists) {
+        alert("你已經在工地裡了！請找屬於你的那張卡片。");
+        return;
+    }
+    
+    // 初始化空任務並同步
+    const initialTasks = [];
+    partners.push({ name: myIdentity.name, tasks: initialTasks });
+    syncMyProgress(initialTasks);
 }
 
 function addTask(e, dogName) {
     if (e.key === 'Enter' && e.target.value.trim() !== "") {
-        if (dogName !== myIdentity.name) return alert("你不能幫別的狗勾加工作！");
+        // 安全檢查：只能改自己的
+        if (dogName !== myIdentity.name) return alert("別人的狗命，不要亂動！");
         
         const taskName = e.target.value;
-        let targetInput = prompt(`設定「${taskName}」的目標重量（建議 500-900）：`, 500);
-        let target = parseInt(targetInput) || 500;
+        let target = parseInt(prompt(`設定「${taskName}」的重量 (500-900)：`, 500)) || 500;
         
-        // 嚴格字數限制
-        if (target < 500) {
-            alert("🛑 太輕了！地獄管理員要求最少 500 字。");
-            target = 500;
-        } else if (target > 900) {
-            alert("🛑 太多了！上限為 900 字。");
-            target = 900;
-        }
+        // 強制地獄規範
+        target = Math.max(500, Math.min(900, target));
 
         const dog = partners.find(p => p.name === dogName);
         dog.tasks.push({ text: taskName, done: false, wordCount: 0, targetWords: target });
+        
         e.target.value = "";
         syncMyProgress(dog.tasks);
     }
@@ -132,75 +120,25 @@ function updateProgress(dogName, tIdx) {
     
     const dog = partners.find(p => p.name === dogName);
     const task = dog.tasks[tIdx];
-    const n = prompt(`更新「${task.text}」目前進度：`, task.wordCount);
+    const n = prompt(`更新「${task.text}」目前的搬運進度：`, task.wordCount);
     
     if (n !== null) {
         task.wordCount = parseInt(n) || 0;
-        task.done = task.wordCount >= task.targetWords; // 達標自動勾選
+        task.done = task.wordCount >= task.targetWords; // 達標自動打勾
         syncMyProgress(dog.tasks);
     }
 }
 
-// 禁止手動勾選邏輯
+// 禁止手動勾選
 function toggleTask(dogName, tIdx) {
     if (dogName !== myIdentity.name) return;
     const dog = partners.find(p => p.name === dogName);
     const task = dog.tasks[tIdx];
 
     if (!task.done && task.wordCount < task.targetWords) {
-        alert(`🛑 絕對不可以！沙子還不夠重（目前 ${task.wordCount}/${task.targetWords}）！`);
+        alert(`🛑 絕對不可以偷懶！目前才搬了 ${task.wordCount}/${task.targetWords}。`);
         return; 
     }
     task.done = !task.done;
     syncMyProgress(dog.tasks);
-}
-
-// --- 6. 渲染 UI ---
-function renderProgressWall() {
-    const grid = document.getElementById('partner-grid');
-    if(!grid) return;
-    
-    const cardsHTML = partners.map(p => {
-        const cur = p.tasks.reduce((sum, t) => sum + (t.wordCount || 0), 0);
-        const tar = p.tasks.reduce((sum, t) => sum + (t.targetWords || 0), 0);
-        const progress = tar === 0 ? 0 : Math.round((cur / tar) * 100);
-
-        return `
-            <div class="partner-card">
-                <div class="partner-header">
-                    <span class="partner-name">${p.name}</span>
-                    <span style="color:var(--accent-color)">${progress}%</span>
-                </div>
-                <div class="ind-progress-container">
-                    <div class="ind-progress-bar" style="width:${Math.min(100, progress)}%"></div>
-                </div>
-                <ul class="task-list">
-                    ${p.tasks.map((t, i) => `
-                        <li class="task-item">
-                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask('${p.name}', ${i})"></div>
-                            <span class="task-text ${t.done ? 'done' : ''}" onclick="updateProgress('${p.name}', ${i})">
-                                ${t.text} <small style="opacity:0.5">(${t.wordCount}/${t.targetWords})</small>
-                            </span>
-                        </li>
-                    `).join('')}
-                </ul>
-                ${p.name === myIdentity.name ? 
-                    `<input type="text" class="input-mini" placeholder="+ 敲 Enter 新增任務" onkeypress="addTask(event, '${p.name}')">` : 
-                    `<p style="font-size:0.7em; color:#444; margin-top:10px;">(觀摩中)</p>`
-                }
-            </div>
-        `;
-    }).join('');
-
-    // 修復「沒辦法新增」的問題：確保按鈕始終存在或正確顯示
-    const hasMyCard = partners.some(p => p.name === myIdentity.name);
-    const addBtnHTML = hasMyCard ? "" : `
-        <div class="add-partner-card" onclick="addNewPartner()">
-            <div class="plus-icon">+</div>
-            <div style="font-weight:bold;">加入進度牆</div>
-            <small>身分：${myIdentity.name}</small>
-        </div>
-    `;
-
-    grid.innerHTML = cardsHTML + addBtnHTML;
 }
