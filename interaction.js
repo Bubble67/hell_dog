@@ -7,7 +7,7 @@ let lastDataString = "";
 document.addEventListener('DOMContentLoaded', () => {
     updateIdentityDisplay();
     renderLogs();
-    setInterval(renderLogs, 5000); 
+    setInterval(renderLogs, 500); 
 
     const playInput = document.getElementById('play-input');
     if (playInput) {
