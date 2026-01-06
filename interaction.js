@@ -1,6 +1,6 @@
 // --- 1. 配置與變數 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzhkXANOIVp2QH3JWa03PRq7KHKZ1d8GShwvGBYYbWfvAlXu5LoszgXeb0J4LmY79cnQw/exec";
-let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗"};
+let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "" };
 let lastDataString = "";
 
 // --- 2. 初始化 ---
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playInput = document.getElementById('play-input');
     if (playInput) {
         playInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && window.innerWidth < 768) {
+            if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
                 e.preventDefault();
                 handleSend();
             }
@@ -25,8 +25,15 @@ document.addEventListener('DOMContentLoaded', () => {
 function updateIdentityDisplay() {
     const display = document.getElementById('current-dog');
     if (display) {
-        const breedText = myIdentity.breed || "遊蕩靈魂";
-        display.textContent = `當前靈魂：${myIdentity.name} (${breedText})`;
+        const hasBreed = myIdentity.breed && 
+                         myIdentity.breed !== "遊蕩靈魂" && 
+                         myIdentity.breed !== "未轉生";
+        
+        if (hasBreed) {
+            display.textContent = `當前靈魂：${myIdentity.name} (${myIdentity.breed})`;
+        } else {
+            display.textContent = `當前靈魂：${myIdentity.name}`;
+        }
     }
 }
 
