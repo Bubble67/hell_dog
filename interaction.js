@@ -1,6 +1,6 @@
 // --- 1. 配置與變數 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzhkXANOIVp2QH3JWa03PRq7KHKZ1d8GShwvGBYYbWfvAlXu5LoszgXeb0J4LmY79cnQw/exec";
-let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "遊蕩靈魂" };
+let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗"};
 let lastDataString = "";
 
 // --- 2. 初始化 ---
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const playInput = document.getElementById('play-input');
     if (playInput) {
         playInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter' && !e.shiftKey && window.innerWidth > 768) {
+            if (e.key === 'Enter' && !e.shiftKey && window.innerWidth < 768) {
                 e.preventDefault();
                 handleSend();
             }
@@ -67,7 +67,7 @@ async function handleSend() {
     const text = input.value.trim();
     if (!text || input.disabled) return;
 
-    input.placeholder = "訊號狗努力中……"; // 顯示提示
+    input.placeholder = "訊號狗努力中……"; 
     input.disabled = true;
 
     try {
