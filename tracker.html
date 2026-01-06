@@ -3,30 +3,33 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>懺悔進度回報</title>
+    <title>地獄寫字狗沙堡｜進度回報</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="main-wrapper">
-        <header style="text-align:center;">
-            <h1>地獄寫字狗進度牆</h1>
-        </header>
-            <div class="main-wrapper">
-        <p class="subtitle">—— 每隻狗勾貢獻一塊磚，沙堡終將高聳入雲 ——</p>
-    </header>
-
-    <section class="tool-section">
-        <div class="tool-title">✍️ 地獄打字機</div>
-        <textarea id="draft-area" placeholder="在此投入沙粒，緩緩秤出你靈魂的重量……" oninput="countWords()"></textarea>
-        <div class="counter-display">
-            目前累計：<span id="char-count" class="counter-val">0</span> 字（不含空格） | 
-            含標點：<span id="total-count" class="counter-val">0</span>
+        <div class="nav-header" style="text-align: left; margin-bottom: 20px;">
+            <a href="index.html" style="color: var(--accent-color); text-decoration: none;">🏰 返回地獄入口</a>
         </div>
-    </section>
 
-    <div class="partner-grid" id="partner-grid"></div>
-</div>
+        <header style="text-align:center; margin-bottom: 30px;">
+            <h1>地獄寫字狗進度牆</h1>
+            <p class="subtitle">—— 每隻狗勾貢獻一塊磚，沙堡終將高聳入雲 ——</p>
+        </header>
 
-    <script src="script.js"></script>
+        <section class="tool-section">
+            <div class="tool-title">✍️ 地獄打字機</div>
+            <textarea id="draft-area" placeholder="在此投入沙粒，緩緩秤出你靈魂的重量……" oninput="countWords()"></textarea>
+            <div class="counter-display">
+                目前累計：<span id="char-count" class="counter-val">0</span> 字（不含空格） | 
+                含標點：<span id="total-count" class="counter-val">0</span>
+            </div>
+            <div id="sync-status" style="font-size: 0.8em; color: #666; margin-top: 10px; text-align: right;">衛星收訊中...</div>
+        </section>
+
+        <div class="partner-grid" id="partner-grid"></div>
+    </div>
+
+    <script src="tracker.js"></script>
 </body>
 </html>
