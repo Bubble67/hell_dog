@@ -1,9 +1,22 @@
+// --- 1. 配置與變數 ---
 const GAS_URL = "https://script.google.com/macros/s/AKfycbzhkXANOIVp2QH3JWa03PRq7KHKZ1d8GShwvGBYYbWfvAlXu5LoszgXeb0J4LmY79cnQw/exec";
-let partners = JSON.parse(localStorage.getItem('sandcastlePartners')) || [
-    { id: 1, name: "建設隊長麻糬", tasks: [{ text: "初始化地獄地基", done: true, wordCount: 500, targetWords: 500 }] }
-];
-let records = JSON.parse(localStorage.getItem('hellRecords')) || [];
+let myIdentity = JSON.parse(localStorage.getItem('hellDogIdentity')) || { name: "無名地獄狗", breed: "遊蕩靈魂" };
+let partners = []; // 雲端同步的夥伴資料
+let records = JSON.parse(localStorage.getItem('hellRecords')) || []; // 本地日誌紀錄
 
+// --- 2. 初始化 ---
+document.addEventListener('DOMContentLoaded', () => {
+    // 讀取本地暫存
+    document.getElementById('draft-area').value = localStorage.getItem('hellDraft') || "";
+    document.getElementById('author-name').value = localStorage.getItem('hellCodename') || myIdentity.name;
+    
+    autoSave(); //
+    renderRecords(); //
+    fetchCloudTasks(); // 初始撈取雲端資料
+    setInterval(fetchCloudTasks, 10000); // 每 10 秒與雲端同步一次
+});
+
+// --- 3. 地獄打字機功能 ---
 function autoSave() {
     const text = document.getElementById('draft-area').value;
     localStorage.setItem('hellDraft', text);
@@ -25,126 +38,114 @@ function castToStone() {
     navigator.clipboard.writeText(formatted).then(() => {
         alert("🔥 磚塊已鑄造！前往文件貼上。");
         saveToLocalRecord(author, count);
+        localStorage.setItem('hellCodename', author);
         window.open(docUrl, '_blank');
     });
 }
 
+// --- 4. 雲端同步核心 ---
+async function fetchCloudTasks() {
+    const statusEl = document.getElementById('sync-status');
+    try {
+        const response = await fetch(`${GAS_URL}?mode=tasks`, { cache: 'no-store' });
+        const data = await response.json();
+        partners = data;
+        renderProgressWall();
+        if(statusEl) statusEl.textContent = "● 雲端同步中";
+    } catch (e) {
+        if(statusEl) statusEl.textContent = "○ 離線模式";
+    }
+}
+
+async function syncMyProgress(myTasks) {
+    const statusEl = document.getElementById('sync-status');
+    if(statusEl) statusEl.textContent = "訊號狗搬運中...";
+    try {
+        await fetch(GAS_URL, {
+            method: 'POST',
+            mode: 'no-cors',
+            body: JSON.stringify({
+                type: 'sync_task',
+                author: myIdentity.name,
+                tasks: myTasks
+            })
+        });
+        setTimeout(fetchCloudTasks, 1000);
+    } catch (e) {
+        alert("搬運失敗，沙堡磚塊掉在路上了。");
+    }
+}
+
+// --- 5. 任務管理與限制 ---
 function addNewPartner() {
-    const name = prompt("報上你的狗名：");
-    if (!name) return;
-    partners.push({ id: Date.now(), name, tasks: [] });
-    saveAndRender();
+    if (partners.some(p => p.name === myIdentity.name)) return alert("你已經在牆上了！");
+    partners.push({ name: myIdentity.name, tasks: [] });
+    syncMyProgress([]);
 }
 
-// 【修復】新增任務：強制規範字數在 500-900 之間
-function addTask(e, pId) {
+function addTask(e, dogName) {
     if (e.key === 'Enter' && e.target.value.trim() !== "") {
-        const taskName = e.target.value;
-        let targetInput = prompt(`設定「${taskName}」的目標重量（建議 500-900）：`, 500);
+        if (dogName !== myIdentity.name) return alert("你不能幫別的狗勾加工作！");
         
-        if (targetInput !== null) {
-            let target = parseInt(targetInput) || 500;
-            
-            // 強制範圍限制
-            if (target < 500) {
-                alert("🛑 太輕了！地獄管理員要求最少 500 字，已自動為你修正。");
-                target = 500;
-            } else if (target > 900) {
-                alert("🛑 貪多嚼不爛！上限為 900 字，已自動為你修正。");
-                target = 900;
-            }
-
-            const p = partners.find(p => p.id === pId);
-            p.tasks.push({ text: taskName, done: false, wordCount: 0, targetWords: target });
-            e.target.value = "";
-            saveAndRender();
+        const taskName = e.target.value;
+        let targetInput = prompt(`這塊零件有多重？`, 500);
+        let target = parseInt(targetInput) || 500;
+        
+        if (target < 500) {
+            alert("🛑 偷懶也不是這樣搞的。");
+            target = 500;
+        } else if (target > 900) {
+            alert("🛑 訊號狗搬不動這麼多沙子！");
+            target = 900;
         }
+
+        const dog = partners.find(p => p.name === dogName);
+        dog.tasks.push({ text: taskName, done: false, wordCount: 0, targetWords: target });
+        e.target.value = "";
+        syncMyProgress(dog.tasks);
     }
 }
 
-// 更新進度：若達標自動勾選，未達標自動取消完成狀態
-function updateProgress(pId, tIdx) {
-    const p = partners.find(p => p.id === pId);
-    const task = p.tasks[tIdx];
-    const n = prompt(`更新「${task.text}」目前搬運了多少沙子 (目標 ${task.targetWords})：`, task.wordCount);
-    if (n !== null) {
-        task.wordCount = parseInt(n) || 0;
-        task.done = task.wordCount >= task.targetWords;
-        saveAndRender();
-    }
-}
+function toggleTask(dogName, tIdx) {
+    if (dogName !== myIdentity.name) return;
+    const dog = partners.find(p => p.name === dogName);
+    const task = dog.tasks[tIdx];
 
-// 【修復】絕對禁止：字數未達標前禁止手動勾選完成
-function toggleTask(pId, tIdx) {
-    const p = partners.find(p => p.id === pId);
-    const task = p.tasks[tIdx];
-
-    // 如果試圖將未完成任務勾選為完成
     if (!task.done && task.wordCount < task.targetWords) {
         alert(`🛑 絕對不可以！沙子還不夠重（目前 ${task.wordCount}/${task.targetWords}），不准偷懶！`);
         return; 
     }
-
     task.done = !task.done;
-    saveAndRender();
+    syncMyProgress(dog.tasks);
 }
 
-function deleteTask(pId, tIdx) {
-    if (confirm("要拆掉這塊磚嗎？")) {
-        partners.find(p => p.id === pId).tasks.splice(tIdx, 1);
-        saveAndRender();
-    }
-}
-
-function removePartner(pId) {
-    if (confirm("確定要從工地撤離嗎？")) {
-        partners = partners.filter(p => p.id !== pId);
-        saveAndRender();
-    }
-}
-
-function saveAndRender() {
-    localStorage.setItem('sandcastlePartners', JSON.stringify(partners));
+// --- 6. 渲染 UI ---
+function renderProgressWall() {
     const grid = document.getElementById('partner-grid');
+    if(!grid) return;
     
-    let cardsHTML = partners.map(p => {
+    grid.innerHTML = partners.map(p => {
         const cur = p.tasks.reduce((sum, t) => sum + (t.wordCount || 0), 0);
         const tar = p.tasks.reduce((sum, t) => sum + (t.targetWords || 0), 0);
-        const progress = tar === 0 ? 0 : Math.round((cur / tar) * 100);
+        const prg = tar === 0 ? 0 : Math.round((cur / tar) * 100);
 
         return `
             <div class="partner-card">
-                <div class="partner-header">
-                    <span class="partner-name">${p.name}</span>
-                    <span style="color:var(--accent-color)">${progress}%</span>
-                </div>
-                <div class="ind-progress-container"><div class="ind-progress-bar" style="width:${progress}%"></div></div>
+                <div class="partner-name">${p.name} <span style="float:right; color:var(--accent-color)">${prg}%</span></div>
+                <div class="ind-progress-container"><div class="ind-progress-bar" style="width:${Math.min(100, prg)}%"></div></div>
                 <ul class="task-list">
                     ${p.tasks.map((t, i) => `
                         <li class="task-item">
-                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask(${p.id}, ${i})"></div>
-                            <span class="task-text ${t.done ? 'done' : ''}" onclick="updateProgress(${p.id}, ${i})">
-                                ${t.text} <small style="opacity:0.5">(${t.wordCount}/${t.targetWords})</small>
+                            <div class="check-box ${t.done ? 'done' : ''}" onclick="toggleTask('${p.name}', ${i})"></div>
+                            <span class="task-text ${t.done ? 'done' : ''}" onclick="updateProgress('${p.name}', ${i})">
+                                ${t.text} <small>(${t.wordCount}/${t.targetWords})</small>
                             </span>
-                            <span style="opacity:0.2; cursor:pointer" onclick="deleteTask(${p.id}, ${i})">×</span>
                         </li>
                     `).join('')}
                 </ul>
-                <input type="text" class="input-mini" placeholder="+ 敲 Enter 新增任務" onkeypress="addTask(event, ${p.id})">
-                <div style="text-align:right; margin-top:15px;">
-                    <button onclick="removePartner(${p.id})" style="background:none; border:none; color:#444; font-size:0.7em; cursor:pointer;">撤離進度牆</button>
-                </div>
-            </div>
-        `;
-    }).join('');
-
-    const addCardHTML = `
-        <div class="add-partner-card" onclick="addNewPartner()">
-            <div class="plus-icon">+</div>
-            <div style="font-weight:bold;">如果你也掉進地獄的話</div>
-        </div>
-    `;
-    grid.innerHTML = cardsHTML + addCardHTML;
+                ${p.name === myIdentity.name ? `<input type="text" class="input-mini" placeholder="+ Enter 新增任務" onkeypress="addTask(event, '${p.name}')">` : ""}
+            </div>`;
+    }).join('') + (partners.some(p => p.name === myIdentity.name) ? "" : `<div class="add-partner-card" onclick="addNewPartner()"><div class="plus-icon">+</div>加入進度牆</div>`);
 }
 
 function saveToLocalRecord(author, count) {
@@ -156,19 +157,7 @@ function saveToLocalRecord(author, count) {
 
 function renderRecords() {
     const container = document.getElementById('bricks-container');
-    container.innerHTML = records.map(r => `
-        <li class="task-item" style="border-bottom-style:dashed; color:#888">
-            <span>[${r.time}] <b>${r.author}</b> 搬運了 ${r.count} 粒美沙</span>
-        </li>
-    `).join('');
+    if(container) {
+        container.innerHTML = records.map(r => `<li class="task-item" style="border-bottom-style:dashed; color:#888"><span>[${r.time}] <b>${r.author}</b> 搬運了 ${r.count} 粒美沙</span></li>`).join('');
+    }
 }
-
-window.onload = () => {
-    const draft = localStorage.getItem('hellDraft') || "";
-    document.getElementById('draft-area').value = draft;
-    document.getElementById('author-name').value = localStorage.getItem('hellCodename') || "";
-    document.getElementById('author-name').oninput = (e) => localStorage.setItem('hellCodename', e.target.value);
-    autoSave();
-    renderRecords();
-    saveAndRender();
-};

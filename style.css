@@ -1,65 +1,74 @@
-        :root {
-            --bg-color: #0f0f1a; --card-color: #1a1a2e; --accent-color: #e94560;
-            --secondary-color: #533483; --text-color: #e0e0e0; --highlight-color: #ffd700;
-            --muted-color: #444;
-        }
+:root {
+    --bg-color: #0f0f1a; 
+    --card-color: #1a1a2e; 
+    --accent-color: #e94560; /* 地獄紅 */
+    --secondary-color: #533483; /* 靈魂紫 */
+    --text-color: #e0e0e0; 
+    --highlight-color: #ffd700; /* 磚塊金 */
+    --muted-color: #444;
+}
 
-        body {
-            font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
-            background-color: var(--bg-color);
-            background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0f0f1a 100%);
-            color: var(--text-color); margin: 0; padding: 20px; line-height: 1.6;
-        }
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: var(--bg-color);
+    background-image: radial-gradient(circle at 50% 50%, #1a1a2e 0%, #0f0f1a 100%);
+    color: var(--text-color); margin: 0; padding: 20px; line-height: 1.6;
+}
 
-        .main-wrapper { max-width: 1200px; margin: 0 auto; }
-        header { text-align: center; margin-bottom: 40px; }
-        h1 { color: var(--accent-color); font-size: 2.5em; margin-bottom: 10px; text-shadow: 0 0 15px rgba(233, 69, 96, 0.4); }
-        .subtitle { color: #888; font-style: italic; }
+/* 容器樣式 */
+.main-wrapper, .container, .portal-container {
+    max-width: 1200px; margin: 0 auto;
+    animation: fadeIn 0.8s ease-out;
+}
 
-        .tool-section {
-            background: var(--card-color); padding: 25px; border-radius: 15px;
-            border: 1px solid #333; margin-bottom: 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-        }
-        .tool-title { color: var(--highlight-color); margin-bottom: 15px; font-weight: bold; display: flex; align-items: center; gap: 10px; }
+/* 標題與文字樣式 */
+h1 { 
+    color: var(--accent-color); font-size: 2.5em; text-align: center;
+    margin-bottom: 10px; text-shadow: 0 0 15px rgba(233, 69, 96, 0.4); 
+}
+.subtitle, .description { 
+    color: #888; font-style: italic; text-align: center; margin-bottom: 40px; 
+}
 
-        textarea {
-            width: 100%; height: 120px; background: rgba(0,0,0,0.3); border: 1px solid #444;
-            border-radius: 8px; color: white; padding: 15px; box-sizing: border-box;
-            font-size: 1.1em; outline: none; transition: 0.3s;
-        }
-        textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(233, 69, 96, 0.2); }
-        .counter-display { margin-top: 10px; text-align: right; font-size: 0.9em; color: #aaa; }
-        .counter-val { color: var(--accent-color); font-weight: bold; font-size: 1.2em; }
+/* 卡片與區塊樣式 */
+.tool-section, .partner-card {
+    background: var(--card-color); padding: 25px; border-radius: 15px;
+    border: 1px solid #333; margin-bottom: 30px; 
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5); transition: 0.3s;
+}
+.partner-card:hover { border-color: var(--secondary-color); transform: translateY(-5px); }
 
-        .partner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
-        .partner-card {
-            background: var(--card-color); border-radius: 15px; padding: 20px; border: 1px solid #333;
-            transition: 0.3s; position: relative;
-        }
-        .partner-card:hover { border-color: var(--secondary-color); }
-        .partner-name { font-size: 1.2em; color: var(--highlight-color); font-weight: bold; }
+/* 打字機與輸入框樣式 */
+textarea {
+    width: 100%; height: 120px; background: rgba(0,0,0,0.3); border: 1px solid #444;
+    border-radius: 8px; color: white; padding: 15px; box-sizing: border-box;
+    font-size: 1.1em; outline: none; transition: 0.3s;
+}
+textarea:focus { border-color: var(--accent-color); box-shadow: 0 0 15px rgba(233, 69, 96, 0.2); }
 
-        .ind-progress-container { background: #111; height: 8px; border-radius: 4px; margin-bottom: 20px; overflow: hidden; }
-        .ind-progress-bar {
-            height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
-            width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
-        }
+.counter-display { margin-top: 10px; text-align: right; font-size: 0.9em; color: #aaa; }
+.counter-val { color: var(--accent-color); font-weight: bold; font-size: 1.2em; }
 
-        .task-list { list-style: none; padding: 0; margin: 0; }
-        .task-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #2a2a3a; }
-        .check-box { width: 18px; height: 18px; border: 2px solid var(--accent-color); border-radius: 4px; cursor: pointer; flex-shrink: 0; }
-        .check-box.done { background: var(--accent-color); }
-        .task-text { flex: 1; font-size: 0.95em; cursor: pointer; transition: 0.2s; }
-        .task-text.done { text-decoration: line-through; color: #555; }
+/* 進度條樣式 */
+.ind-progress-container { background: #111; height: 8px; border-radius: 4px; margin: 15px 0; overflow: hidden; }
+.ind-progress-bar {
+    height: 100%; background: linear-gradient(90deg, var(--secondary-color), var(--accent-color));
+    width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+}
 
-        .input-mini { background: #000; border: 1px solid #444; color: white; padding: 8px 12px; border-radius: 6px; width: 100%; box-sizing: border-box; margin-top: 12px; }
-        .cta-btn { background: var(--accent-color); color: white; border: none; padding: 12px; border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s; width: 100%; }
-        .cta-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4); }
+/* 按鈕樣式 */
+.cta-btn, .portal-btn {
+    background: var(--accent-color); color: white; border: none; padding: 12px;
+    border-radius: 8px; font-weight: bold; cursor: pointer; transition: 0.3s;
+    text-align: center; text-decoration: none; display: block;
+}
+.cta-btn:hover, .portal-btn:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(233, 69, 96, 0.4); }
 
-        .add-partner-card {
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            min-height: 250px; border: 2px dashed #444; background: rgba(255,255,255,0.02);
-            border-radius: 15px; transition: 0.3s; color: #666; cursor: pointer;
-        }
-        .add-partner-card:hover { border-color: var(--accent-color); color: var(--accent-color); background: rgba(233, 69, 96, 0.05); }
-        .add-partner-card .plus-icon { font-size: 3em; margin-bottom: 10px; font-weight: bold; }
+/* 網格系統 */
+.partner-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 25px; }
+
+/* 入口頁專屬按鈕風格 */
+.nav-links { display: flex; flex-direction: column; gap: 20px; max-width: 500px; margin: 0 auto; }
+.portal-btn span { display: block; font-size: 0.8em; opacity: 0.7; font-weight: normal; margin-top: 5px; }
+
+@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
